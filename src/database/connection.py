@@ -1,9 +1,5 @@
-"""
-Database connection module with local PostgreSQL.
-Uses connection pooling for optimal performance.
-"""
-
 import os
+import re
 import psycopg2
 import logging
 import hashlib
@@ -18,16 +14,56 @@ from flask import g, has_app_context
 logger = logging.getLogger(__name__)
 
 # =====================================================================
-# LOCAL POSTGRESQL DATABASE CONFIGURATION
+# POSTGRESQL DATABASE CONFIGURATION
 # =====================================================================
 
-DB_CONFIG = {
-    "dbname": os.getenv("DB_NAME", "biometric_access_db"),
-    "user": os.getenv("DB_USER", "postgres"),
-    "password": os.getenv("DB_PASSWORD", "2546"),
-    "host": os.getenv("DB_HOST", "localhost"),
-    "port": int(os.getenv("DB_PORT", 5432)),
-}
+def parse_database_url(url: str) -> dict:
+    """
+    Parse a PostgreSQL DATABASE_URL into a dict of connection parameters.
+    Handles both internal and external Render URLs.
+    """
+    # Remove the scheme
+    if url.startswith('postgresql://'):
+        url = url[13:]
+    elif url.startswith('postgres://'):
+        url = url[11:]
+    
+    # Extract credentials and host
+    # Format: user:password@host:port/dbname
+    match = re.match(r'^(?P<user>[^:]+):(?P<password>[^@]+)@(?P<host>[^:/]+)(?::(?P<port>\d+))?/(?P<dbname>.+)$', url)
+    if match:
+        return {
+            'dbname': match.group('dbname'),
+            'user': match.group('user'),
+            'password': match.group('password'),
+            'host': match.group('host'),
+            'port': int(match.group('port')) if match.group('port') else 5432,
+        }
+    else:
+        raise ValueError(f"Could not parse DATABASE_URL: {url}")
+
+# Use DATABASE_URL if provided (Render does this automatically)
+if os.getenv('DATABASE_URL'):
+    try:
+        DB_CONFIG = parse_database_url(os.getenv('DATABASE_URL'))
+        logger.info(f"[OK] Using DATABASE_URL for {DB_CONFIG['dbname']}")
+    except Exception as e:
+        logger.error(f"[ERROR] Failed to parse DATABASE_URL: {e}")
+        DB_CONFIG = {
+            "dbname": os.getenv("DB_NAME", "biometric_access_db"),
+            "user": os.getenv("DB_USER", "postgres"),
+            "password": os.getenv("DB_PASSWORD", "2546"),
+            "host": os.getenv("DB_HOST", "localhost"),
+            "port": int(os.getenv("DB_PORT", 5432)),
+        }
+else:
+    DB_CONFIG = {
+        "dbname": os.getenv("DB_NAME", "biometric_access_db"),
+        "user": os.getenv("DB_USER", "postgres"),
+        "password": os.getenv("DB_PASSWORD", "2546"),
+        "host": os.getenv("DB_HOST", "localhost"),
+        "port": int(os.getenv("DB_PORT", 5432)),
+    }
 
 # =====================================================================
 # CONNECTION POOL (Single source of truth)
