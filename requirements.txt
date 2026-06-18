@@ -1,6 +1,4 @@
-# ============================================
-# CORE WEB FRAMEWORK
-# ============================================
+# Core web framework
 Flask>=2.3.0
 Flask-Login>=0.6.0
 Flask-WTF>=1.2.0
@@ -10,56 +8,41 @@ Werkzeug>=2.3.0
 Jinja2>=3.1.0
 eventlet>=0.33.0
 
-# ============================================
-# DATABASE
-# ============================================
+# Database
 psycopg2-binary>=2.9.0
 SQLAlchemy>=2.0.0
 alembic>=1.12.0
 
-# ============================================
-# AUTHENTICATION
-# ============================================
+# Security
 bcrypt>=4.0.0
 firebase-admin>=6.4.0
 PyJWT>=2.8.0
 
-# ============================================
-# BIOMETRIC PROCESSING - FACE RECOGNITION
-# ============================================
+# Image processing (lightweight – no face recognition models)
 opencv-python>=4.8.0
-opencv-contrib-python>=4.8.0
 numpy>=1.24.0
 pillow>=10.0.0
-dlib-bin>=20.0.0
-face-recognition>=1.3.0
-mediapipe>=0.10.0
 
-# ============================================
-# HARDWARE INTEGRATION
-# ============================================
+# Hardware communication (serial)
 pyserial>=3.5
 pyfingerprint>=1.5
 PyYAML>=6.0.0
 
-# ============================================
-# REPORTING & EXPORTS
-# ============================================
+# Reports
 reportlab>=4.0.0
 pandas>=2.0.0
 openpyxl>=3.1.0
 
-# ============================================
-# UTILITIES
-# ============================================
+# Utilities
 python-dotenv>=1.0.0
 python-dateutil>=2.8.0
 psutil>=5.9.0
 requests>=2.31.0
 
-# ============================================
-# DEVELOPMENT TOOLS
-# ============================================
+# For Render DATABASE_URL support
+dj-database-url
+
+# Testing (optional for production)
 pytest>=7.0.0
 black>=23.0.0
 flake8>=6.0.0
