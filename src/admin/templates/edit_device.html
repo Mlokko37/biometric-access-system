@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Device{% endblock %}
+
+{% block content %}
+<!-- Add wrapper div with scrollbar styling -->
+<div class="dashboard-scroll-wrapper">
+    <div class="dashboard-container">
+        <div class="row">
+            <div class="col-12">
+                <div class="page-header">
+                    <h1><i class="fas fa-edit"></i> Edit Device</h1>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{{ url_for('devices') }}">Devices</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">Edit Device</li>
+                        </ol>
+                    </nav>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Edit Device Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="{{ url_for('edit_device', device_id=device.device_id) }}">
+                            {% with messages = get_flashed_messages(with_categories=true) %}
+                                {% if messages %}
+                                    {% for category, message in messages %}
+                                        <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                            {{ message }}
+                                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                        </div>
+                                    {% endfor %}
+                                {% endif %}
+                            {% endwith %}
+
+                            <div class="mb-3">
+                                <label for="device-id" class="form-label">Device ID</label>
+                                <input type="text" id="device-id" class="form-control" 
+                                    value="{{ device.device_id }}" readonly 
+                                    aria-label="Device ID">
+                                <div class="form-text">Device ID cannot be changed once registered.</div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="device_name" class="form-label">Device Name <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="device_name" name="device_name" 
+                                           value="{{ device.device_name }}" required>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="device_type" class="form-label">Device Type <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="device_type" name="device_type" required>
+                                        <option value="fingerprint_scanner" {% if device.device_type == 'fingerprint_scanner' %}selected{% endif %}>Fingerprint Scanner</option>
+                                        <option value="facial_recognition" {% if device.device_type == 'facial_recognition' %}selected{% endif %}>Facial Recognition Camera</option>
+                                        <option value="turnstile" {% if device.device_type == 'turnstile' %}selected{% endif %}>Turnstile / Gate</option>
+                                        <option value="smart_lock" {% if device.device_type == 'smart_lock' %}selected{% endif %}>Smart Lock (Electronic Door Lock)</option>
+                                        <option value="keypad" {% if device.device_type == 'keypad' %}selected{% endif %}>Keypad (PIN Entry)</option>
+                                        <option value="other" {% if device.device_type == 'other' %}selected{% endif %}>Other Hardware Device</option>
+                                    </select>
+                                    <div class="form-text">
+                                        <i class="fas fa-info-circle"></i>
+                                        Choose the device type that best matches your hardware.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="location" class="form-label">Installation Location</label>
+                                    <input type="text" class="form-control" id="location" name="location" 
+                                           value="{{ device.location or '' }}" 
+                                           placeholder="e.g., Main Entrance, Lab 101">
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="ip_address" class="form-label">IP Address</label>
+                                    <input type="text" class="form-control" id="ip_address" name="ip_address" 
+                                           value="{{ device.ip_address or '' }}" 
+                                           placeholder="e.g., 192.168.1.100">
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="api_key" class="form-label">API Key</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="api_key" name="api_key" 
+                                           value="{{ device.api_key }}" readonly>
+                                    <button type="button" class="btn btn-outline-secondary" onclick="regenerateApiKey()">
+                                        <i class="fas fa-sync-alt"></i> Regenerate
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary" onclick="copyApiKey()">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                </div>
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle"></i>
+                                    API key is used for device authentication. Regenerating will invalidate the old key.
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="status" class="form-label">Status</label>
+                                <select class="form-select" id="status" name="status">
+                                    <option value="online" {% if device.status == 'online' %}selected{% endif %}>Online</option>
+                                    <option value="offline" {% if device.status == 'offline' %}selected{% endif %}>Offline</option>
+                                    <option value="maintenance" {% if device.status == 'maintenance' %}selected{% endif %}>Maintenance</option>
+                                    <option value="inactive" {% if device.status == 'inactive' %}selected{% endif %}>Inactive</option>
+                                </select>
+                            </div>
+
+                            <div class="d-flex justify-content-between mt-4">
+                                <a href="{{ url_for('devices') }}" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left"></i> Cancel
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Update Device
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0"><i class="fas fa-info-circle"></i> Device Details</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <strong>Device ID:</strong>
+                            <div class="mt-1">
+                                <code class="bg-light p-2 rounded d-block">{{ device.device_id }}</code>
+                            </div>
+                            <small class="text-muted">Cannot be changed</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <strong>Current Status:</strong>
+                            <div class="mt-1">
+                                <span class="badge 
+                                    {% if device.status == 'online' %}bg-success
+                                    {% elif device.status == 'offline' %}bg-danger
+                                    {% elif device.status == 'maintenance' %}bg-warning
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ device.status|title }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <strong>API Key:</strong>
+                            <div class="mt-1">
+                                <code class="bg-light p-2 rounded d-block" style="font-size: 0.7rem; word-break: break-all;">
+                                    {{ device.api_key }}
+                                </code>
+                            </div>
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle"></i>
+                                Click <strong>Copy</strong> to copy the API key
+                            </small>
+                        </div>
+
+                        <div class="mb-3">
+                            <strong>Registered:</strong>
+                            <div class="mt-1">
+                                {{ device.created_at.strftime('%Y-%m-%d %H:%M') if device.created_at else 'N/A' }}
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-exclamation-circle"></i>
+                            <strong>Note:</strong> You can also change the device status from the devices page using the status dropdown.
+                        </div>
+
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Warning:</strong> If this device is assigned to an access point, updating its type or API key may affect access point functionality.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function generateApiKey() {
+    var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    var key = '';
+    for (var i = 0; i < 32; i++) {
+        key += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return key;
+}
+
+function regenerateApiKey() {
+    if (confirm('⚠️ Are you sure you want to regenerate the API key?\n\nThis will invalidate the current key and the device will need to use the new key to authenticate.')) {
+        var newKey = generateApiKey();
+        document.getElementById('api_key').value = newKey;
+        showToast('API key regenerated successfully!', 'success');
+    }
+}
+
+function copyApiKey() {
+    var apiKeyInput = document.getElementById('api_key');
+    apiKeyInput.select();
+    document.execCommand('copy');
+    showToast('API key copied to clipboard!', 'success');
+}
+
+function showToast(message, type) {
+    var toast = document.createElement('div');
+    toast.className = 'toast align-items-center text-white bg-' + (type === 'success' ? 'success' : 'info') + ' border-0 position-fixed bottom-0 end-0 m-3';
+    toast.style.zIndex = '9999';
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'info-circle'} me-2"></i>
+                ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    `;
+    document.body.appendChild(toast);
+    var bsToast = new bootstrap.Toast(toast, { delay: 3000 });
+    bsToast.show();
+    toast.addEventListener('hidden.bs.toast', function() {
+        toast.remove();
+    });
+}
+</script>
+{% endblock %}

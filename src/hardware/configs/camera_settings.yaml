@@ -1,0 +1,119 @@
+# Camera settings configuration
+# For facial recognition system
+
+# Default camera settings
+default_camera:
+  index: 0                    # Default camera index (0 for first webcam)
+  width: 640                  # Frame width
+  height: 480                 # Frame height
+  fps: 30                     # Frames per second
+  brightness: 0.5             # 0.0 to 1.0
+  contrast: 0.5               # 0.0 to 1.0
+  saturation: 0.5             # 0.0 to 1.0
+  hue: 0.0                    # -1.0 to 1.0
+  gain: 0.0                   # 0.0 to 1.0
+  exposure: -1                # -1 for auto, 0-100 for manual
+  auto_focus: true            # Enable/disable auto focus
+  focus: 0                    # Manual focus (0-255)
+  
+# Face detection settings
+face_detection:
+  scale_factor: 1.1           # Scale factor for multi-scale detection
+  min_neighbors: 5            # Minimum neighbors for detection
+  min_size: [100, 100]        # Minimum face size [width, height]
+  max_size: [400, 400]        # Maximum face size [width, height]
+  use_cnn: false              # Use CNN model (more accurate but slower)
+  
+# Face recognition settings
+face_recognition:
+  model: "hog"                # "hog" (faster) or "cnn" (more accurate)
+  num_jitters: 1              # Number of times to re-sample face
+  tolerance: 0.6              # Distance tolerance (lower = more strict)
+  confidence_threshold: 0.75  # Minimum confidence for recognition
+  
+# Enrollment settings
+enrollment:
+  num_samples: 10             # Number of samples to capture
+  sample_delay: 0.5           # Delay between samples (seconds)
+  min_samples: 5              # Minimum samples required
+  max_samples: 20             # Maximum samples allowed
+  capture_timeout: 30         # Timeout for enrollment (seconds)
+  
+# Image processing
+image_processing:
+  grayscale: true             # Convert to grayscale
+  equalize_hist: true         # Apply histogram equalization
+  resize_width: 200           # Resize width for processing
+  resize_height: 200          # Resize height for processing
+  normalize: true             # Normalize pixel values
+  denoise: true               # Apply denoising
+  
+# Storage settings
+storage:
+  face_data_dir: "data/faces"           # Directory for face data
+  model_file: "data/faces/model.yml"    # Trained model file
+  labels_file: "data/faces/labels.pkl"  # Face labels file
+  backup_dir: "data/backups"            # Backup directory
+  max_backups: 10                       # Maximum number of backups
+  
+# Logging settings
+logging:
+  level: "INFO"              # DEBUG, INFO, WARNING, ERROR
+  save_detection_logs: true  # Save detection logs
+  log_dir: "logs/faces"      # Log directory
+  max_log_size: 10           # Maximum log size in MB
+  
+# Performance settings
+performance:
+  detection_interval: 0.1    # Interval between detection cycles (seconds)
+  max_processing_time: 2.0   # Maximum processing time per frame (seconds)
+  use_gpu: false             # Use GPU acceleration if available
+  thread_count: 2            # Number of threads for processing
+  
+# Security settings
+security:
+  encrypt_face_data: true    # Encrypt stored face data
+  require_admin_enroll: true # Require admin for enrollment
+  max_failed_attempts: 5     # Maximum failed recognition attempts
+  lockout_duration: 300      # Lockout duration in seconds (5 minutes)
+  
+# Network camera settings (if using IP cameras)
+network_cameras:
+  - name: "entrance_camera"
+    url: "rtsp://192.168.1.100:554/stream"
+    username: "admin"
+    password: "password"     # Change this in production!
+    resolution: [1920, 1080]
+    fps: 30
+    
+  - name: "lab_camera"
+    url: "http://192.168.1.101/video"
+    username: ""
+    password: ""
+    resolution: [1280, 720]
+    fps: 25
+    
+# Multiple camera support
+cameras:
+  - id: "camera_0"
+    name: "Primary Webcam"
+    index: 0
+    type: "usb"
+    location: "Main Entrance"
+    enabled: true
+    settings: "default_camera"
+    
+  - id: "camera_1"
+    name: "Secondary Webcam"
+    index: 1
+    type: "usb"
+    location: "Lab Entrance"
+    enabled: false
+    settings: "default_camera"
+    
+# Testing settings
+testing:
+  test_images_dir: "test_images"
+  save_test_results: true
+  show_preview: true
+  preview_delay: 1000        # Delay for preview display (milliseconds)

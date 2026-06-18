@@ -1,0 +1,460 @@
+{% extends "base.html" %}
+
+{% block title %}Database Management{% endblock %}
+
+{% block content %}
+<style>
+    /* Force horizontal scrollbar on table wrapper */
+    .table-responsive {
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+    }
+    .table-responsive::-webkit-scrollbar {
+        height: 12px;
+    }
+    .table-responsive::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 6px;
+    }
+    .table-responsive::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 6px;
+    }
+    .table-responsive::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+
+    /* Query results scroll container */
+    #query-results {
+        max-height: 400px;
+        overflow: auto;
+    }
+    #query-results::-webkit-scrollbar {
+        width: 12px;
+        height: 12px;
+    }
+    #query-results::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 6px;
+    }
+    #query-results::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 6px;
+    }
+    #query-results::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+</style>
+
+<div class="container-fluid database-page">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-header">
+                <h1><i class="fas fa-database"></i> Database Management</h1>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Database</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    {% if error %}
+    <div class="alert alert-danger">
+        <i class="fas fa-exclamation-triangle"></i> Error: {{ error }}
+    </div>
+    {% endif %}
+
+    <!-- Database Overview Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <a href="#database-size-info" class="stat-card-link">
+                <div class="card stat-card bg-primary text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title">Database Size</h6>
+                                <h2 class="mb-0">{{ "%.2f"|format(db_size_mb) }} MB</h2>
+                            </div>
+                            <i class="fas fa-database fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="#tables-section" class="stat-card-link">
+                <div class="card stat-card bg-success text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title">Tables</h6>
+                                <h2 class="mb-0">{{ tables|length }}</h2>
+                            </div>
+                            <i class="fas fa-table fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="{{ url_for('students') if 'students' in url_map else '#' }}" class="stat-card-link">
+                <div class="card stat-card bg-info text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title">Students</h6>
+                                <h2 class="mb-0">{{ stats.students }}</h2>
+                            </div>
+                            <i class="fas fa-users fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="#audit-logs-section" class="stat-card-link">
+                <div class="card stat-card bg-warning text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title">Access Logs</h6>
+                                <h2 class="mb-0">{{ stats.access_logs }}</h2>
+                            </div>
+                            <i class="fas fa-history fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- DATABASE MAINTENANCE SECTION (Backup & Restore) -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-tools"></i> Database Maintenance</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Backup Column -->
+                        <div class="col-md-6">
+                            <div class="maintenance-card">
+                                <div class="maintenance-header">
+                                    <i class="fas fa-save text-primary"></i>
+                                    <h6>Backup Database</h6>
+                                </div>
+                                <p class="card-text">Create a full backup of the database.</p>
+                                <button class="btn btn-primary" onclick="createBackup()">
+                                    <i class="fas fa-download"></i> Create Backup
+                                </button>
+                                <div id="backup-status" class="mt-3"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Restore Column -->
+                        <div class="col-md-6">
+                            <div class="maintenance-card">
+                                <div class="maintenance-header">
+                                    <i class="fas fa-upload text-warning"></i>
+                                    <h6>Restore Database</h6>
+                                </div>
+                                <p class="card-text">Restore database from a backup file.</p>
+                                <div class="input-group mb-3">
+                                    <input type="text" class="form-control" id="restore-file" placeholder="backup_YYYYMMDD_HHMMSS.sql">
+                                    <button class="btn btn-warning" onclick="restoreBackup()">
+                                        <i class="fas fa-upload"></i> Restore
+                                    </button>
+                                </div>
+                                <div id="restore-status" class="mt-2"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DATABASE TABLES SECTION -->
+    <div class="row mb-4" id="tables-section">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0"><i class="fas fa-table"></i> Database Tables</h5>
+                    <button class="btn btn-sm btn-outline-primary" onclick="optimizeDatabase()">
+                        <i class="fas fa-sync-alt"></i> Optimize All Tables
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Table Name</th>
+                                    <th>Size (MB)</th>
+                                    <th>Columns</th>
+                                    <th>Rows</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for table in tables %}
+                                <tr>
+                                    <td>
+                                        <i class="fas fa-table text-primary me-2"></i>
+                                        <strong>{{ table.name }}</strong>
+                                    </td>
+                                    <td>{{ "%.2f"|format(table.size_mb) }}</td>
+                                    <td>{{ table.column_count }}</td>
+                                    <td>{{ table.row_count if table.row_count else 'N/A' }}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-info" onclick="showTableInfo('{{ table.name }}')">
+                                            <i class="fas fa-info-circle"></i> Info
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-warning" onclick="optimizeTable('{{ table.name }}')">
+                                            <i class="fas fa-sync-alt"></i> Optimize
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADDITIONAL INFO SECTIONS (for the stat card links) -->
+    <div class="row mb-4 hidden-section" id="database-size-info">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-database"></i> Database Size Information</h5>
+                </div>
+                <div class="card-body">
+                    <p>Current database size: <strong>{{ "%.2f"|format(db_size_mb) }} MB</strong></p>
+                    <p>This includes all tables, indexes, and system data.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4 hidden-section" id="audit-logs-section">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-history"></i> Access Logs Information</h5>
+                </div>
+                <div class="card-body">
+                    <p>Total access logs: <strong>{{ stats.access_logs }}</strong></p>
+                    <p>Access logs track all login attempts and system access.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SQL Query Tool -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-terminal"></i> SQL Query Tool</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Warning:</strong> This tool allows direct database access. Use with caution!
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="sql-query" class="form-label">SQL Query</label>
+                        <textarea class="form-control" id="sql-query" rows="4" 
+                                  placeholder="SELECT * FROM students LIMIT 10"></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <button class="btn btn-primary" onclick="executeQuery()">
+                            <i class="fas fa-play"></i> Execute Query
+                        </button>
+                        <button class="btn btn-secondary" onclick="clearResults()">
+                            <i class="fas fa-trash"></i> Clear
+                        </button>
+                    </div>
+                    
+                    <!-- Query results container with scroll -->
+                    <div id="query-results"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    /**
+     * Executes the SQL query entered in the textarea.
+     * Sends a POST request to the backend and displays the results.
+     */
+    function executeQuery() {
+        const query = document.getElementById('sql-query').value.trim();
+        if (!query) {
+            document.getElementById('query-results').innerHTML = `
+                <div class="alert alert-warning">Please enter a SQL query.</div>
+            `;
+            return;
+        }
+
+        // Show loading state
+        document.getElementById('query-results').innerHTML = `
+            <div class="text-center py-3">
+                <i class="fas fa-spinner fa-spin fa-2x"></i>
+                <p>Executing query...</p>
+            </div>
+        `;
+
+        // Send request to the correct backend endpoint
+        fetch('/database/query', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken()
+            },
+            body: JSON.stringify({ query: query })
+        })
+        .then(response => response.json())
+        .then(data => {
+            displayQueryResults(data);
+        })
+        .catch(error => {
+            document.getElementById('query-results').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i> Error: ${error.message}
+                </div>
+            `;
+        });
+    }
+
+    /**
+     * Displays query results in the results container.
+     * Handles the backend's response format: { success, columns, results, error, message }
+     */
+    function displayQueryResults(data) {
+        const container = document.getElementById('query-results');
+        // Check for error first
+        if (data.error) {
+            container.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i> ${data.error}
+                </div>
+            `;
+            return;
+        }
+        // If success is false but no error string, treat as error
+        if (data.success === false) {
+            container.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i> ${data.message || 'Query failed'}
+                </div>
+            `;
+            return;
+        }
+
+        // For non-SELECT queries (e.g., UPDATE), there will be a message
+        if (data.message) {
+            container.innerHTML = `<div class="alert alert-info">${data.message}</div>`;
+            return;
+        }
+
+        // For SELECT queries, we expect columns and results (backend uses 'results', not 'rows')
+        if (!data.columns || data.columns.length === 0) {
+            container.innerHTML = `<div class="alert alert-info">Query executed successfully. No data returned.</div>`;
+            return;
+        }
+
+        // Build HTML table
+        let html = `
+            <div class="table-responsive">
+                <table class="table table-striped table-bordered">
+                    <thead>
+                        <tr>
+                            ${data.columns.map(col => `<th>${col}</th>`).join('')}
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+
+        const rows = data.results || [];
+        if (rows.length > 0) {
+            rows.forEach(row => {
+                html += `<tr>${row.map(cell => `<td>${cell ?? 'NULL'}</td>`).join('')}</tr>`;
+            });
+        } else {
+            html += `<tr><td colspan="${data.columns.length}" class="text-center">No rows</td></tr>`;
+        }
+
+        html += `
+                    </tbody>
+                </table>
+            </div>
+            <p class="text-muted small">${rows.length} row(s) returned.</p>
+        `;
+        container.innerHTML = html;
+    }
+
+    /**
+     * Clears the query textarea and results.
+     */
+    function clearResults() {
+        document.getElementById('sql-query').value = '';
+        document.getElementById('query-results').innerHTML = '';
+    }
+
+    /**
+     * Helper to get CSRF token from meta tag (if using Flask-WTF).
+     */
+    function getCSRFToken() {
+        const token = document.querySelector('meta[name="csrf-token"]');
+        return token ? token.getAttribute('content') : '';
+    }
+
+    // =============================================
+    // Stub functions for other buttons (to avoid JS errors)
+    // =============================================
+    function createBackup() {
+        document.getElementById('backup-status').innerHTML = `
+            <div class="alert alert-info">Backup functionality not implemented yet.</div>
+        `;
+    }
+
+    function restoreBackup() {
+        const file = document.getElementById('restore-file').value.trim();
+        if (!file) {
+            document.getElementById('restore-status').innerHTML = `
+                <div class="alert alert-warning">Please enter a backup filename.</div>
+            `;
+            return;
+        }
+        document.getElementById('restore-status').innerHTML = `
+            <div class="alert alert-info">Restore functionality not implemented yet.</div>
+        `;
+    }
+
+    function optimizeDatabase() {
+        alert('Optimize all tables functionality not implemented.');
+    }
+
+    function showTableInfo(tableName) {
+        alert(`Info for table: ${tableName}\n(Implementation pending)`);
+    }
+
+    function optimizeTable(tableName) {
+        alert(`Optimize table: ${tableName}\n(Implementation pending)`);
+    }
+</script>
+{% endblock %}

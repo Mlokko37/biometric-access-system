@@ -1,0 +1,324 @@
+{% extends "base.html" %}
+
+{% block title %}System Configuration{% endblock %}
+
+{% block content %}
+<!-- Add wrapper div with scrollbar styling -->
+<div class="dashboard-scroll-wrapper">
+    <div class="dashboard-container">
+        <div class="row">
+            <div class="col-12">
+                <div class="page-header">
+                    <h1><i class="fas fa-sliders-h configuration-icon"></i> System Configuration</h1>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">Configuration</li>
+                        </ol>
+                    </nav>
+                </div>
+            </div>
+        </div>
+
+        {% if error %}
+        <div class="alert alert-danger">
+            <i class="fas fa-exclamation-triangle"></i> Error: {{ error }}
+        </div>
+        {% endif %}
+
+        <!-- Configuration Actions -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="quick-actions">
+                    <button class="action-btn" id="saveConfigBtn" aria-label="Save configuration">
+                        <i class="fas fa-save"></i>
+                        <span>Save Configuration</span>
+                    </button>
+                    <button class="action-btn" id="exportConfigBtn" aria-label="Export configuration">
+                        <i class="fas fa-download"></i>
+                        <span>Export Config</span>
+                    </button>
+                    <button class="action-btn" id="resetConfigBtn" aria-label="Reset to default settings">
+                        <i class="fas fa-undo"></i>
+                        <span>Reset to Defaults</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Application Configuration -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0"><i class="fas fa-desktop"></i> Application Settings</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="app_name" class="form-label">Application Name</label>
+                                <input type="text" class="form-control" id="app_name" 
+                                       value="{{ config.app_name }}" aria-label="Application name">
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="app_version" class="form-label">Application Version</label>
+                                <input type="text" class="form-control" id="app_version" 
+                                       value="{{ config.app_version }}" readonly aria-label="Application version">
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="debug_mode" 
+                                           {% if config.debug_mode %}checked{% endif %}>
+                                    <label class="form-check-label" for="debug_mode">
+                                        Debug Mode
+                                    </label>
+                                </div>
+                                <small class="text-muted">Enable detailed error messages and logging</small>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="session_lifetime" class="form-label">Session Lifetime (seconds)</label>
+                                <input type="number" class="form-control" id="session_lifetime" 
+                                       value="{{ config.session_lifetime }}" min="300" max="86400" 
+                                       aria-label="Session lifetime in seconds">
+                                <small class="text-muted">How long users stay logged in (300-86400 seconds)</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Database Configuration -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0"><i class="fas fa-database"></i> Database Configuration</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <label for="db_host" class="form-label">Database Host</label>
+                                <input type="text" class="form-control" id="db_host" 
+                                       value="{{ config.database.host }}" aria-label="Database host">
+                            </div>
+                            
+                            <div class="col-md-3 mb-3">
+                                <label for="db_port" class="form-label">Database Port</label>
+                                <input type="number" class="form-control" id="db_port" 
+                                       value="{{ config.database.port }}" min="1" max="65535" 
+                                       aria-label="Database port number">
+                            </div>
+                            
+                            <div class="col-md-3 mb-3">
+                                <label for="db_name" class="form-label">Database Name</label>
+                                <input type="text" class="form-control" id="db_name" 
+                                       value="{{ config.database.name }}" aria-label="Database name">
+                            </div>
+                            
+                            <div class="col-md-3 mb-3">
+                                <label for="db_user" class="form-label">Database User</label>
+                                <input type="text" class="form-control" id="db_user" 
+                                       value="{{ config.database.user }}" aria-label="Database username">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Security Configuration -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0"><i class="fas fa-shield-alt"></i> Security Settings</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="password_min_length" class="form-label">Minimum Password Length</label>
+                            <input type="number" class="form-control" id="password_min_length" 
+                                   value="{{ config.security.password_min_length }}" min="6" max="32" 
+                                   aria-label="Minimum password length">
+                        </div>
+                        
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="password_require_special" 
+                                   {% if config.security.password_require_special %}checked{% endif %}>
+                            <label class="form-check-label" for="password_require_special">
+                                Require special characters in passwords
+                            </label>
+                        </div>
+                        
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="password_require_numbers" 
+                                   {% if config.security.password_require_numbers %}checked{% endif %}>
+                            <label class="form-check-label" for="password_require_numbers">
+                                Require numbers in passwords
+                            </label>
+                        </div>
+                        
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="password_require_uppercase" 
+                                   {% if config.security.password_require_uppercase %}checked{% endif %}>
+                            <label class="form-check-label" for="password_require_uppercase">
+                                Require uppercase letters in passwords
+                            </label>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="max_login_attempts" class="form-label">Max Login Attempts</label>
+                                <input type="number" class="form-control" id="max_login_attempts" 
+                                       value="{{ config.security.max_login_attempts }}" min="1" max="10" 
+                                       aria-label="Maximum login attempts">
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="lockout_duration" class="form-label">Lockout Duration (seconds)</label>
+                                <input type="number" class="form-control" id="lockout_duration" 
+                                       value="{{ config.security.lockout_duration }}" min="60" max="3600" 
+                                       aria-label="Lockout duration in seconds">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0"><i class="fas fa-fingerprint"></i> Biometric Settings</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="match_threshold" class="form-label">Match Threshold (%)</label>
+                            <input type="range" class="form-range" id="match_threshold" min="50" max="100" step="1"
+                                   value="{{ config.biometric.match_threshold }}" aria-label="Biometric match threshold percentage">
+                            <div class="d-flex justify-content-between">
+                                <small>50%</small>
+                                <strong id="threshold_value">{{ config.biometric.match_threshold }}%</strong>
+                                <small>100%</small>
+                            </div>
+                            <small class="text-muted">Minimum similarity score for successful match</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="max_attempts" class="form-label">Maximum Attempts</label>
+                            <input type="number" class="form-control" id="max_attempts" 
+                                   value="{{ config.biometric.max_attempts }}" min="1" max="10" 
+                                   aria-label="Maximum biometric attempts">
+                            <small class="text-muted">Number of failed attempts before lockout</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="timeout_seconds" class="form-label">Timeout (seconds)</label>
+                            <input type="number" class="form-control" id="timeout_seconds" 
+                                   value="{{ config.biometric.timeout_seconds }}" min="5" max="300" 
+                                   aria-label="Biometric timeout in seconds">
+                            <small class="text-muted">Wait time after failed attempts</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Backup & Logging Configuration -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0"><i class="fas fa-history"></i> Logging Settings</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="log_level" class="form-label">Log Level</label>
+                            <select class="form-select" id="log_level" aria-label="Select log level">
+                                <option value="DEBUG" {% if config.logging.level == 'DEBUG' %}selected{% endif %}>DEBUG</option>
+                                <option value="INFO" {% if config.logging.level == 'INFO' %}selected{% endif %}>INFO</option>
+                                <option value="WARNING" {% if config.logging.level == 'WARNING' %}selected{% endif %}>WARNING</option>
+                                <option value="ERROR" {% if config.logging.level == 'ERROR' %}selected{% endif %}>ERROR</option>
+                                <option value="CRITICAL" {% if config.logging.level == 'CRITICAL' %}selected{% endif %}>CRITICAL</option>
+                            </select>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="max_file_size_mb" class="form-label">Max Log File Size (MB)</label>
+                                <input type="number" class="form-control" id="max_file_size_mb" 
+                                       value="{{ config.logging.max_file_size_mb }}" min="1" max="100" 
+                                       aria-label="Maximum log file size in MB">
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="backup_count" class="form-label">Backup Count</label>
+                                <input type="number" class="form-control" id="backup_count" 
+                                       value="{{ config.logging.backup_count }}" min="1" max="50" 
+                                       aria-label="Number of log backups to keep">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0"><i class="fas fa-save"></i> Backup Settings</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="auto_backup" 
+                                   {% if config.backup.auto_backup %}checked{% endif %}>
+                            <label class="form-check-label" for="auto_backup">
+                                Enable Automatic Backups
+                            </label>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="backup_interval_hours" class="form-label">Backup Interval (hours)</label>
+                                <input type="number" class="form-control" id="backup_interval_hours" 
+                                       value="{{ config.backup.backup_interval_hours }}" min="1" max="720" 
+                                       aria-label="Backup interval in hours">
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="keep_backups_days" class="form-label">Keep Backups (days)</label>
+                                <input type="number" class="form-control" id="keep_backups_days" 
+                                   value="{{ config.backup.keep_backups_days }}" min="1" max="365" 
+                                   aria-label="Number of days to keep backups">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="backup_path" class="form-label">Backup Path</label>
+                            <input type="text" class="form-control" id="backup_path" 
+                                   value="{{ config.backup.backup_path }}" aria-label="Backup directory path">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Current Configuration Display -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0"><i class="fas fa-code"></i> Current Configuration (JSON View)</h5>
+                    </div>
+                    <div class="card-body">
+                        <pre id="config-json" class="bg-light p-3 rounded config-json-view">
+{{ config|tojson(indent=2) }}
+                        </pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

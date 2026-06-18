@@ -8,6 +8,7 @@ build/
 dist/
 *.egg-info/
 .egg
+.Pytest_cache/
 
 # Environments
 .env
@@ -37,3 +38,64 @@ data/backups/*
 # OS
 Thumbs.db
 .DS_Store
+# ===== SECURITY - CRITICAL =====
+# Firebase credentials
+*.json
+firebase-*.json
+*-firebase-adminsdk-*.json
+service-account-key.json
+
+# Environment files
+.env
+.env.local
+.env.*.local
+.env.backup
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+*.mdb
+
+# ===== TEMPORARY FILES =====
+*.tmp
+*.temp
+*.log
+*.bak
+*.backup
+z.txt
+location.reload()
+icon.html
+
+# ===== TEST FILES =====
+test_*.py
+*_test.py
+!tests/**/test_*.py
+
+# ===== IDE & OS =====
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ===== PYTHON =====
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ===== PROJECT SPECIFIC =====
+backups/*.sql
+!backups/.gitkeep
+data/backups/*.sql
+!data/backups/.gitkeep
+
+# ===== HARDWARE CONFIGS WITH CREDS =====
+hardware/configs/*.yaml
+!hardware/configs/*.example.yaml

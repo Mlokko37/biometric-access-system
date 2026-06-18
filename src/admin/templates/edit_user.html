@@ -1,0 +1,308 @@
+{% extends "base.html" %}
+
+{% block title %}Edit User - {{ user['full_name'] if user is mapping else user.full_name }}{% endblock %}
+
+{% block content %}
+<!-- Add wrapper div with scrollbar styling -->
+<div class="dashboard-scroll-wrapper">
+    <div class="dashboard-container">
+        <div class="row">
+            <div class="col-12">
+                <div class="page-header">
+                    <h1>
+                        <i class="fas fa-user-edit" aria-hidden="true"></i> 
+                        Edit User
+                    </h1>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{{ url_for('user_management') }}">User Management</a></li>
+                            <li class="breadcrumb-item"><a href="{{ url_for('view_user', user_id=user['admin_id'] if user is mapping else user.admin_id) }}">{{ user['full_name'] if user is mapping else user.full_name }}</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">Edit User</li>
+                        </ol>
+                    </nav>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-8 mx-auto">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-user-cog" aria-hidden="true"></i> Edit User Information
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="{{ url_for('edit_user', user_id=user['admin_id'] if user is mapping else user.admin_id) }}" class="edit-user-form">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="username" class="form-label">
+                                        <i class="fas fa-user" aria-hidden="true"></i> Username
+                                    </label>
+                                    <input type="text" 
+                                           class="form-control bg-light" 
+                                           id="username" 
+                                           value="{{ user['username'] if user is mapping else user.username }}" 
+                                           readonly 
+                                           disabled>
+                                    <small class="text-muted">
+                                        <i class="fas fa-info-circle" aria-hidden="true"></i> Username cannot be changed
+                                    </small>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="user_id" class="form-label">
+                                        <i class="fas fa-hashtag" aria-hidden="true"></i> User ID
+                                    </label>
+                                    <input type="text" 
+                                           class="form-control bg-light" 
+                                           id="user_id" 
+                                           value="{{ user['admin_id'] if user is mapping else user.admin_id }}" 
+                                           readonly 
+                                           disabled>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="full_name" class="form-label required">
+                                    <i class="fas fa-id-card" aria-hidden="true"></i> Full Name
+                                </label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="full_name" 
+                                       name="full_name" 
+                                       value="{{ user['full_name'] if user is mapping else user.full_name }}" 
+                                       required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="email" class="form-label">
+                                    <i class="fas fa-envelope" aria-hidden="true"></i> Email Address
+                                </label>
+                                <input type="email" 
+                                       class="form-control" 
+                                       id="email" 
+                                       name="email" 
+                                       value="{{ user['email'] if user is mapping else user.email }}"
+                                       placeholder="user@example.com">
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="role" class="form-label required">
+                                        <i class="fas fa-shield-alt" aria-hidden="true"></i> User Role
+                                    </label>
+                                    <select class="form-select" id="role" name="role" required>
+                                        <option value="staff" {% if user.role == 'staff' %}selected{% endif %}>Staff</option>
+                                        <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Admin</option>
+                                        <option value="superadmin" {% if user.role == 'superadmin' %}selected{% endif %}>Super Admin</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch mt-4">
+                                        <input class="form-check-input" 
+                                               type="checkbox" 
+                                               id="is_active" 
+                                               name="is_active" 
+                                               {% if user.is_active %}checked{% endif %}>
+                                        <label class="form-check-label" for="is_active">
+                                            <span class="status-indicator">
+                                                {% if (user['is_active'] if user is mapping else user.is_active) %}
+                                                    Active
+                                                {% else %}
+                                                    Inactive
+                                                {% endif %}
+                                            </span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="alert alert-info">
+                                <div class="d-flex">
+                                    <div class="flex-shrink-0">
+                                        <i class="fas fa-info-circle" aria-hidden="true"></i>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <strong>Password Management:</strong>
+                                        <p class="mb-0 mt-1">To change the password, use the 
+                                            <a href="{{ url_for('reset_password', user_id=user['admin_id'] if user is mapping else user.admin_id) }}" class="alert-link">
+                                                Reset Password
+                                            </a> option.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-between mt-4">
+                                <a href="{{ url_for('view_user', user_id=user['admin_id'] if user is mapping else user.admin_id) }}" 
+                                   class="btn btn-outline-secondary">
+                                    <i class="fas fa-arrow-left" aria-hidden="true"></i> 
+                                    Cancel
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save" aria-hidden="true"></i> 
+                                    Update User
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Danger Zone Card - Only for Super Admins -->
+                {% if current_user.role == 'superadmin' and user['admin_id'] != current_user.admin_id %}
+                <div class="card mt-4 border-danger">
+                    <div class="card-header bg-danger text-white">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-exclamation-triangle" aria-hidden="true"></i> 
+                            Danger Zone
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <strong class="text-danger">Delete this user account</strong>
+                                <p class="text-muted mb-0 mt-1">Once deleted, the user will lose access immediately. This action cannot be undone.</p>
+                            </div>
+                            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                                <button type="button" 
+                                        class="btn btn-outline-danger"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#deleteConfirmModal"
+                                        data-user-id="{{ user['admin_id'] if user is mapping else user.admin_id }}"
+                                        data-username="{{ user['username'] if user is mapping else user.username }}">
+                                    <i class="fas fa-trash" aria-hidden="true"></i> 
+                                    Delete User
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteConfirmModalLabel">
+                    <i class="fas fa-exclamation-triangle" aria-hidden="true"></i> 
+                    Confirm Deletion
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete <strong id="deleteUsername"></strong>?</p>
+                <div class="alert alert-danger mb-0">
+                    <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+                    This action cannot be undone. The user will lose all access immediately.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times" aria-hidden="true"></i> Cancel
+                </button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                    <i class="fas fa-trash" aria-hidden="true"></i> Delete User
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function getCsrfToken() {
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    if (meta) {
+        return meta.content;
+    }
+    const cookie = document.cookie.split('; ').find(row => row.startsWith('csrf_token='));
+    return cookie ? cookie.split('=')[1] : '';
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const deleteModal = document.getElementById('deleteConfirmModal');
+    let currentDeleteId = null;
+    let currentDeleteUsername = null;
+    
+    if (deleteModal) {
+        deleteModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            currentDeleteId = button.getAttribute('data-user-id');
+            currentDeleteUsername = button.getAttribute('data-username');
+            
+            const deleteUsernameSpan = document.getElementById('deleteUsername');
+            if (deleteUsernameSpan) {
+                deleteUsernameSpan.textContent = currentDeleteUsername;
+            }
+        });
+        
+        const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+        if (confirmDeleteBtn) {
+            confirmDeleteBtn.addEventListener('click', function() {
+                if (!currentDeleteId) return;
+                
+                const deleteBtn = this;
+                const originalHtml = deleteBtn.innerHTML;
+                deleteBtn.disabled = true;
+                deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
+                
+                const csrfToken = getCsrfToken();
+                
+                fetch(`/users/delete/${currentDeleteId}`, {
+                    method: 'DELETE',
+                    headers: { 
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': csrfToken
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const modal = bootstrap.Modal.getInstance(deleteModal);
+                        modal.hide();
+                        
+                        const alertDiv = document.createElement('div');
+                        alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed top-0 end-0 m-3';
+                        alertDiv.style.zIndex = '9999';
+                        alertDiv.style.minWidth = '300px';
+                        alertDiv.innerHTML = `
+                            <i class="fas fa-check-circle"></i> User "${currentDeleteUsername}" deleted successfully!
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        `;
+                        document.body.appendChild(alertDiv);
+                        
+                        setTimeout(() => {
+                            window.location.href = "{{ url_for('user_management') }}";
+                        }, 1000);
+                    } else {
+                        alert('Error: ' + (data.error || 'Delete failed'));
+                        deleteBtn.disabled = false;
+                        deleteBtn.innerHTML = originalHtml;
+                    }
+                })
+                .catch(error => {
+                    console.error('Delete error:', error);
+                    alert('Network error: ' + error.message);
+                    deleteBtn.disabled = false;
+                    deleteBtn.innerHTML = originalHtml;
+                });
+            });
+        }
+    }
+});
+</script>
+
+<style>
+.required:after {
+    content: " *";
+    color: red;
+}
+</style>
+{% endblock %}

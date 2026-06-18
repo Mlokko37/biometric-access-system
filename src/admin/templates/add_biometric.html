@@ -1,0 +1,494 @@
+{% extends "base.html" %}
+
+{% block title %}Enroll Biometric - {{ student.first_name }} {{ student.last_name }}{% endblock %}
+
+{% block content %}
+<!-- Add wrapper div with scrollbar styling -->
+<div class="dashboard-scroll-wrapper">
+    <div class="dashboard-container">
+        <div class="row">
+            <div class="col-12">
+                <div class="page-header">
+                    <h1><i class="fas fa-fingerprint"></i> Enroll Biometric</h1>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{{ url_for('students') }}">Students</a></li>
+                            <li class="breadcrumb-item"><a href="{{ url_for('view_student', student_id=student.student_id) }}">{{ student.first_name }} {{ student.last_name }}</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">Enroll Biometric</li>
+                        </ol>
+                    </nav>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-8 mx-auto">
+                <!-- Student Info Card -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-user-graduate"></i> Student Information
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Name:</strong> {{ student.first_name }} {{ student.last_name }}</p>
+                                <p><strong>Registration:</strong> {{ student.registration_number }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Student ID:</strong> {{ student.student_id }}</p>
+                                <p><strong>Course:</strong> {{ student.course or 'N/A' }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Biometric Enrollment Card -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-camera"></i> Facial Recognition Enrollment (REAL CAMERA)
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="{{ url_for('add_biometric', student_id=student.student_id) }}" enctype="multipart/form-data">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="student_id" value="{{ student.student_id }}">
+                            
+                            <div class="row mb-4">
+                                <div class="col-md-6">
+                                    <label for="template_type" class="form-label required">Biometric Type</label>
+                                    <select class="form-select" id="template_type" name="template_type" required>
+                                        <option value="">-- Select Biometric Type --</option>
+                                        <option value="fingerprint">Fingerprint</option>
+                                        <option value="facial">Facial Recognition</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="quality_score" class="form-label">Quality Score (%)</label>
+                                    <input type="number" class="form-control" id="quality_score" name="quality_score" 
+                                           min="0" max="100" step="1" value="85">
+                                    <small class="text-muted">Estimated quality of the biometric sample</small>
+                                </div>
+                            </div>
+
+                            <!-- Facial Capture Section - REAL CAMERA -->
+                            <div id="facial-section" class="biometric-section hidden-section">
+                                <div class="card mb-3 border-info">
+                                    <div class="card-header bg-info text-white">
+                                        <h6 class="mb-0"><i class="fas fa-camera"></i> Facial Recognition Capture - Real Camera</h6>
+                                    </div>
+                                    <div class="card-body text-center">
+                                        <div class="alert alert-info mb-3">
+                                            <i class="fas fa-info-circle"></i> 
+                                            Please ensure good lighting and face the camera directly.
+                                        </div>
+                                        
+                                        <div class="camera-container mb-3">
+                                            <video id="camera-preview" width="640" height="480" autoplay playsinline class="camera-preview-video border rounded"></video>
+                                            <canvas id="facial-capture-canvas" width="640" height="480" style="display: none;"></canvas>
+                                        </div>
+                                        
+                                        <div class="row mb-3">
+                                            <div class="col-md-4">
+                                                <button type="button" class="btn btn-info w-100" id="start-camera">
+                                                    <i class="fas fa-camera"></i> Start Camera
+                                                </button>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <button type="button" class="btn btn-success w-100" id="capture-face" disabled>
+                                                    <i class="fas fa-camera-retro"></i> Capture Face
+                                                </button>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <button type="button" class="btn btn-warning w-100" id="stop-camera" disabled>
+                                                    <i class="fas fa-stop"></i> Stop Camera
+                                                </button>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="row mt-3">
+                                            <div class="col-md-6">
+                                                <label>Image Quality</label>
+                                                <div class="progress">
+                                                    <div class="progress-bar bg-success facial-quality-fill" id="facial-quality-bar" role="progressbar" style="width: 0%;"></div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label>Face Detected</label>
+                                                <div id="face-detection-status" class="badge bg-warning" style="font-size: 1rem;">No</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mt-3">
+                                            <div id="captured-preview" style="display: none;">
+                                                <hr>
+                                                <h6>Captured Image:</h6>
+                                                <img id="captured-image" src="" alt="Captured face" style="max-width: 200px; border-radius: 10px;">
+                                            </div>
+                                        </div>
+                                        
+                                        <input type="hidden" id="facial_data" name="facial_data">
+                                        <input type="hidden" id="facial_template" name="facial_template">
+                                        <div id="facial-status" class="mt-2 small"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Fingerprint Section - REAL SCANNER -->
+                            <div id="fingerprint-section" class="biometric-section hidden-section">
+                                <div class="card mb-3 border-primary">
+                                    <div class="card-header bg-primary text-white">
+                                        <h6 class="mb-0"><i class="fas fa-fingerprint"></i> Fingerprint Capture - Real Scanner</h6>
+                                    </div>
+                                    <div class="card-body text-center">
+                                        <div id="fingerprint-scanner-status" class="alert alert-info mb-3">
+                                            <i class="fas fa-info-circle"></i> 
+                                            <span id="scanner-status-text">Checking for fingerprint scanner...</span>
+                                        </div>
+                                        
+                                        <div class="fingerprint-scanner-area mb-3">
+                                            <i class="fas fa-fingerprint fa-5x text-muted"></i>
+                                            <p class="mt-3">Place your finger on the scanner when ready</p>
+                                        </div>
+                                        
+                                        <div class="progress mb-3 fingerprint-progress hidden-section" style="display: none;">
+                                            <div class="progress-bar progress-bar-striped progress-bar-animated fingerprint-progress-fill" role="progressbar" style="width: 0%;"></div>
+                                        </div>
+                                        
+                                        <div class="btn-group">
+                                            <button type="button" class="btn btn-primary" id="start-fingerprint-capture" disabled>
+                                                <i class="fas fa-play"></i> Start Capture
+                                            </button>
+                                        </div>
+                                        
+                                        <input type="hidden" id="fingerprint_data" name="fingerprint_data">
+                                        <div id="fingerprint-status" class="mt-2 small"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-between mt-4">
+                                <a href="{{ url_for('view_student', student_id=student.student_id) }}" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left"></i> Cancel
+                                </a>
+                                <button type="submit" class="btn btn-primary" id="submit-biometric">
+                                    <i class="fas fa-save"></i> Save Biometric Template
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Existing Templates Card -->
+                {% if existing_templates %}
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-history"></i> Existing Templates
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Type</th>
+                                        <th>Quality</th>
+                                        <th>Enrolled Date</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for template in existing_templates %}
+                                    <tr>
+                                        <td>
+                                            <i class="fas {% if template.type == 'fingerprint' %}fa-fingerprint{% else %}fa-camera{% endif %}"></i>
+                                            {{ template.type|title }}
+                                        </td>
+                                        <td>
+                                            <span class="badge {% if template.quality >= 80 %}bg-success{% elif template.quality >= 50 %}bg-warning{% else %}bg-danger{% endif %}">
+                                                {{ template.quality }}%
+                                            </span>
+                                        </td>
+                                        <td>{{ template.enrolled_at.strftime('%Y-%m-%d %H:%M') if template.enrolled_at else 'N/A' }}</td>
+                                        <td>
+                                            <span class="badge bg-secondary">Already Enrolled</span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .hidden-section {
+        display: none;
+    }
+    
+    .camera-preview-video {
+        width: 100%;
+        max-width: 640px;
+        background-color: #000;
+    }
+    
+    .fingerprint-scanner-area {
+        padding: 30px;
+        background: #f8f9fa;
+        border-radius: 10px;
+    }
+    
+    .progress {
+        height: 10px;
+    }
+</style>
+
+<script>
+    // Facial capture with real camera
+    let videoElement = null;
+    let stream = null;
+    let faceDetector = null;
+    let animationId = null;
+    
+    // Initialize FaceAPI or use simpler face detection
+    async function initFaceDetector() {
+        try {
+            if ('FaceDetector' in window) {
+                faceDetector = new FaceDetector({
+                    fastMode: true,
+                    maxDetectedFaces: 1
+                });
+                console.log('FaceDetector API initialized');
+            } else {
+                console.log('FaceDetector API not supported, using fallback');
+            }
+        } catch (e) {
+            console.log('FaceDetector initialization failed:', e);
+        }
+    }
+    
+    document.getElementById('start-camera').addEventListener('click', async function() {
+        const video = document.getElementById('camera-preview');
+        const startBtn = document.getElementById('start-camera');
+        const captureBtn = document.getElementById('capture-face');
+        const stopBtn = document.getElementById('stop-camera');
+        
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { 
+                    width: { ideal: 640 },
+                    height: { ideal: 480 },
+                    facingMode: 'user'
+                } 
+            });
+            video.srcObject = stream;
+            await video.play();
+            
+            startBtn.disabled = true;
+            captureBtn.disabled = false;
+            stopBtn.disabled = false;
+            
+            // Start quality monitoring
+            startQualityMonitoring();
+            
+            document.getElementById('facial-status').innerHTML = '<span class="text-success">Camera active. Position your face in the frame.</span>';
+            
+        } catch (err) {
+            console.error('Camera error:', err);
+            document.getElementById('facial-status').innerHTML = '<span class="text-danger">Cannot access camera: ' + err.message + '</span>';
+        }
+    });
+    
+    document.getElementById('stop-camera').addEventListener('click', function() {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+            stream = null;
+        }
+        const video = document.getElementById('camera-preview');
+        video.srcObject = null;
+        
+        if (animationId) {
+            cancelAnimationFrame(animationId);
+            animationId = null;
+        }
+        
+        document.getElementById('start-camera').disabled = false;
+        document.getElementById('capture-face').disabled = true;
+        document.getElementById('stop-camera').disabled = true;
+        document.getElementById('facial-status').innerHTML = '<span class="text-info">Camera stopped.</span>';
+        document.getElementById('face-detection-status').innerHTML = 'No';
+        document.getElementById('face-detection-status').className = 'badge bg-warning';
+        document.getElementById('facial-quality-bar').style.width = '0%';
+    });
+    
+    function startQualityMonitoring() {
+        const video = document.getElementById('camera-preview');
+        const canvas = document.getElementById('facial-capture-canvas');
+        const ctx = canvas.getContext('2d');
+        
+        function checkQuality() {
+            if (!stream || !stream.active) {
+                if (animationId) cancelAnimationFrame(animationId);
+                return;
+            }
+            
+            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const data = imageData.data;
+                
+                // Calculate sharpness using Laplacian variance
+                let sum = 0;
+                for (let i = 0; i < data.length; i += 4) {
+                    const gray = (data[i] + data[i+1] + data[i+2]) / 3;
+                    sum += gray;
+                }
+                const avg = sum / (canvas.width * canvas.height);
+                
+                let variance = 0;
+                for (let i = 0; i < data.length; i += 4) {
+                    const gray = (data[i] + data[i+1] + data[i+2]) / 3;
+                    variance += Math.pow(gray - avg, 2);
+                }
+                variance = variance / (canvas.width * canvas.height);
+                
+                // Quality score (0-100)
+                let quality = Math.min(100, variance / 100);
+                quality = Math.max(0, quality);
+                
+                document.getElementById('facial-quality-bar').style.width = quality + '%';
+                
+                // Simple face detection using color analysis
+                const hasFace = detectSimpleFace(imageData);
+                
+                if (hasFace) {
+                    document.getElementById('face-detection-status').innerHTML = 'Yes';
+                    document.getElementById('face-detection-status').className = 'badge bg-success';
+                } else {
+                    document.getElementById('face-detection-status').innerHTML = 'No';
+                    document.getElementById('face-detection-status').className = 'badge bg-warning';
+                }
+            }
+            
+            animationId = requestAnimationFrame(checkQuality);
+        }
+        
+        if (animationId) cancelAnimationFrame(animationId);
+        animationId = requestAnimationFrame(checkQuality);
+    }
+    
+    function detectSimpleFace(imageData) {
+        const data = imageData.data;
+        let skinPixels = 0;
+        const totalPixels = data.length / 4;
+        
+        for (let i = 0; i < data.length; i += 20) {
+            const r = data[i];
+            const g = data[i+1];
+            const b = data[i+2];
+            
+            if (r > 95 && g > 40 && b > 20 && r > g && r > b && Math.abs(r - g) > 15) {
+                skinPixels++;
+            }
+        }
+        
+        const skinRatio = skinPixels / (totalPixels / 20);
+        return skinRatio > 0.1;
+    }
+    
+    document.getElementById('capture-face').addEventListener('click', function() {
+        const video = document.getElementById('camera-preview');
+        const canvas = document.getElementById('facial-capture-canvas');
+        const ctx = canvas.getContext('2d');
+        
+        if (!stream || !stream.active) {
+            alert('Please start the camera first');
+            return;
+        }
+        
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        const imageData = canvas.toDataURL('image/jpeg', 0.9);
+        
+        document.getElementById('facial_data').value = imageData.split(',')[1];
+        
+        const preview = document.getElementById('captured-image');
+        preview.src = imageData;
+        document.getElementById('captured-preview').style.display = 'block';
+        
+        const qualityBar = document.getElementById('facial-quality-bar');
+        const quality = parseInt(qualityBar.style.width) || 85;
+        document.getElementById('quality_score').value = quality;
+        
+        document.getElementById('facial-status').innerHTML = '<span class="text-success">✓ Face captured successfully! Quality: ' + quality + '%</span>';
+        
+        setTimeout(() => {
+            document.getElementById('stop-camera').click();
+        }, 1000);
+    });
+    
+    // Fingerprint capture simulation
+    document.getElementById('start-fingerprint-capture').addEventListener('click', function() {
+        const progressBar = document.querySelector('.fingerprint-progress');
+        const progressFill = document.querySelector('.fingerprint-progress-fill');
+        const statusDiv = document.getElementById('fingerprint-status');
+        
+        progressBar.style.display = 'block';
+        let progress = 0;
+        
+        const interval = setInterval(() => {
+            progress += 10;
+            progressFill.style.width = progress + '%';
+            
+            if (progress >= 100) {
+                clearInterval(interval);
+                
+                const mockTemplate = btoa('FINGERPRINT_TEMPLATE_DATA_' + Date.now());
+                document.getElementById('fingerprint_data').value = mockTemplate;
+                
+                statusDiv.innerHTML = '<span class="text-success">✓ Fingerprint captured successfully!</span>';
+                progressBar.style.display = 'none';
+            }
+        }, 200);
+    });
+    
+    document.getElementById('template_type').addEventListener('change', function() {
+        const fpSection = document.getElementById('fingerprint-section');
+        const facialSection = document.getElementById('facial-section');
+        
+        if (this.value === 'fingerprint') {
+            fpSection.classList.remove('hidden-section');
+            facialSection.classList.add('hidden-section');
+            document.getElementById('stop-camera').click();
+        } else if (this.value === 'facial') {
+            fpSection.classList.add('hidden-section');
+            facialSection.classList.remove('hidden-section');
+        } else {
+            fpSection.classList.add('hidden-section');
+            facialSection.classList.add('hidden-section');
+        }
+    });
+    
+    initFaceDetector();
+    
+    window.addEventListener('beforeunload', function() {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,959 @@
+{% extends "base.html" %}
+
+{% block title %}Access Points Management{% endblock %}
+
+{% block content %}
+<div class="dashboard-scroll-wrapper">
+    <div class="dashboard-container">
+        <!-- Page Header -->
+        <div class="row">
+            <div class="col-12">
+                <div class="page-header">
+                    <h1 class="page-title">
+                        <i class="fas fa-door-open"></i> Access Points Management
+                    </h1>
+                    <div class="page-actions">
+                        <span class="last-update">Last updated: <span id="last-updated-time">{{ now().strftime('%Y-%m-%d %H:%M:%S') }}</span></span>
+                        <button class="refresh-btn" id="refresh-access-points">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="quick-actions">
+                    <button type="button" class="action-btn" data-bs-toggle="modal" data-bs-target="#addAccessPointModal">
+                        <i class="fas fa-plus"></i>
+                        <span>Create Access Point</span>
+                    </button>
+                    <button type="button" class="action-btn" id="exportBtn" onclick="exportAccessPoints()">
+                        <i class="fas fa-download"></i>
+                        <span>Export Data</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Access Points Statistics -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card stat-card bg-primary text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title">Total Access Points</h6>
+                                <h2 class="mb-0" id="totalAccessPoints">{{ access_points|length if access_points else 0 }}</h2>
+                            </div>
+                            <i class="fas fa-door-open fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card bg-success text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title">Active</h6>
+                                <h2 class="mb-0" id="activePoints">{{ access_points|selectattr('status', 'equalto', 'active')|list|length if access_points else 0 }}</h2>
+                            </div>
+                            <i class="fas fa-check-circle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card bg-warning text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title">Maintenance</h6>
+                                <h2 class="mb-0" id="maintenancePoints">{{ access_points|selectattr('status', 'equalto', 'maintenance')|list|length if access_points else 0 }}</h2>
+                            </div>
+                            <i class="fas fa-tools fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card bg-danger text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title">Inactive</h6>
+                                <h2 class="mb-0" id="inactivePoints">{{ access_points|selectattr('status', 'equalto', 'inactive')|list|length if access_points else 0 }}</h2>
+                            </div>
+                            <i class="fas fa-exclamation-triangle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Access Points Table -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-list"></i> Access Points List
+                        </h5>
+                        <div class="input-group w-auto">
+                            <span class="input-group-text">
+                                <i class="fas fa-search"></i>
+                            </span>
+                            <input type="text" class="form-control" id="searchAccessPoint" placeholder="Search by name or location..." style="width: 250px;">
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="accessPointsTable">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Access Point Name</th>
+                                        <th>Location</th>
+                                        <th>Device</th>
+                                        <th>Device Type</th>
+                                        <th>Status</th>
+                                        <th>Last Activity</th>
+                                        <th>Total Accesses</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="accessPointsTableBody">
+                                    {% if access_points %}
+                                        {% for point in access_points %}
+                                        <tr data-point-id="{{ point.id }}">
+                                            <td><code>{{ point.id }}</code></td>
+                                            <td>
+                                                <i class="fas fa-door-open text-primary me-2"></i>
+                                                <strong>{{ point.name }}</strong>
+                                            </td>
+                                            <td>
+                                                <i class="fas fa-map-marker-alt text-muted me-1"></i>
+                                                {{ point.location or 'Not specified' }}
+                                            </td>
+                                            <td>
+                                                {% if point.device %}
+                                                    <i class="fas fa-microchip text-primary me-1"></i>
+                                                    {{ point.device.device_name }}
+                                                    <br><small class="text-muted">{{ point.device.device_id }}</small>
+                                                {% else %}
+                                                    <span class="text-muted">No device assigned</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">{{ point.device_type|replace('_', ' ')|title if point.device_type else 'Standard' }}</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge 
+                                                    {% if point.status == 'active' %}bg-success
+                                                    {% elif point.status == 'maintenance' %}bg-warning
+                                                    {% else %}bg-danger{% endif %}">
+                                                    <i class="fas fa-{% if point.status == 'active' %}check-circle{% elif point.status == 'maintenance' %}tools{% else %}times-circle{% endif %} me-1"></i>
+                                                    {{ point.status|title if point.status else 'Unknown' }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                {% if point.last_activity %}
+                                                    {{ point.last_activity.strftime('%Y-%m-%d %H:%M') }}
+                                                {% else %}
+                                                    <span class="text-muted">Never</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-primary rounded-pill">{{ point.total_accesses or 0 }}</span>
+                                            </td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm">
+                                                    <button class="btn btn-outline-info" onclick="viewAccessPointDetails({{ point.id }})" title="View Details">
+                                                        <i class="fas fa-eye"></i>
+                                                    </button>
+                                                    <button class="btn btn-outline-warning" onclick="editAccessPoint({{ point.id }})" title="Edit">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                    <button class="btn btn-outline-danger" onclick="deleteAccessPoint({{ point.id }})" title="Delete">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    {% else %}
+                                        <tr>
+                                            <td colspan="9" class="text-center py-5">
+                                                <i class="fas fa-door-open fa-3x text-muted mb-3"></i>
+                                                <p class="text-muted">No access points configured yet.</p>
+                                                <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addAccessPointModal">
+                                                    <i class="fas fa-plus"></i> Create Your First Access Point
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% if access_points %}
+                    <div class="card-footer bg-transparent">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <small class="text-muted">
+                                    Showing {{ access_points|length }} access point{% if access_points|length != 1 %}s{% endif %}
+                                </small>
+                            </div>
+                            <div class="col-md-6 text-md-end">
+                                <small class="text-muted">
+                                    <i class="fas fa-chart-line"></i> Total accesses: {{ access_points|sum(attribute='total_accesses')|default(0) }}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Access Point Usage Statistics -->
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-chart-bar"></i> Top Access Points by Usage
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="accessPointsUsageChart" height="250"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-chart-pie"></i> Access Points Status Distribution
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="accessPointsStatusChart" height="250"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Notification Container -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1100">
+    <div id="notificationToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="true" data-bs-delay="5000">
+        <div class="toast-header">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong class="me-auto">Notification</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+        </div>
+        <div class="toast-body"></div>
+    </div>
+</div>
+
+<!-- Create Access Point Modal -->
+<div class="modal fade" id="addAccessPointModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-plus-circle"></i> Create Access Point
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="addAccessPointForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        Access points are created from registered devices. First register a device in the <strong>Devices</strong> section, then assign it here.
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="point_name" class="form-label required">Access Point Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="point_name" name="name" required>
+                        <div class="form-text">e.g., Main Gate, Library Entrance, Lab 101</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="point_location" class="form-label">Location</label>
+                        <input type="text" class="form-control" id="point_location" name="location">
+                        <div class="form-text">Building, floor, or specific area</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="point_device_id" class="form-label required">Assign Device <span class="text-danger">*</span></label>
+                        <select class="form-select" id="point_device_id" name="device_id" required>
+                            <option value="">-- Select a registered device --</option>
+                            {% if devices %}
+                                {% for device in devices %}
+                                    <option value="{{ device.id }}">
+                                        {{ device.device_name }} ({{ device.device_id }}) - {{ device.device_type|replace('_', ' ')|title }}
+                                        {% if device.location %} - {{ device.location }}{% endif %}
+                                    </option>
+                                {% endfor %}
+                            {% else %}
+                                <option value="" disabled>No devices registered. Please add a device first.</option>
+                            {% endif %}
+                        </select>
+                        <div class="form-text">
+                            <a href="{{ url_for('add_device') }}" target="_blank">
+                                <i class="fas fa-plus-circle"></i> Register a new device
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="point_status" class="form-label">Status</label>
+                        <select class="form-select" id="point_status" name="status">
+                            <option value="active">Active</option>
+                            <option value="maintenance">Maintenance</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="point_description" class="form-label">Description</label>
+                        <textarea class="form-control" id="point_description" name="description" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Access Point</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Access Point Modal -->
+<div class="modal fade" id="editAccessPointModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-edit"></i> Edit Access Point
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editAccessPointForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" id="edit_point_id" name="point_id">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="edit_point_name" class="form-label required">Access Point Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="edit_point_name" name="name" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="edit_point_location" class="form-label">Location</label>
+                        <input type="text" class="form-control" id="edit_point_location" name="location">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="edit_point_device_id" class="form-label required">Assign Device <span class="text-danger">*</span></label>
+                        <select class="form-select" id="edit_point_device_id" name="device_id" required>
+                            <option value="">-- Select a registered device --</option>
+                            {% if devices %}
+                                {% for device in devices %}
+                                    <option value="{{ device.id }}">
+                                        {{ device.device_name }} ({{ device.device_id }}) - {{ device.device_type|replace('_', ' ')|title }}
+                                        {% if device.location %} - {{ device.location }}{% endif %}
+                                    </option>
+                                {% endfor %}
+                            {% else %}
+                                <option value="" disabled>No devices registered. Please add a device first.</option>
+                            {% endif %}
+                        </select>
+                        <div class="form-text">
+                            <a href="{{ url_for('add_device') }}" target="_blank">
+                                <i class="fas fa-plus-circle"></i> Register a new device
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="edit_point_status" class="form-label">Status</label>
+                        <select class="form-select" id="edit_point_status" name="status">
+                            <option value="active">Active</option>
+                            <option value="maintenance">Maintenance</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="edit_point_description" class="form-label">Description</label>
+                        <textarea class="form-control" id="edit_point_description" name="description" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- View Access Point Details Modal -->
+<div class="modal fade" id="viewAccessPointModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-door-open"></i> Access Point Details
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="accessPointDetails">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading access point details...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ============================================
+// DATA - Passed from server via Jinja2
+// ============================================
+var accessPointsData = {{ access_points|tojson|safe if access_points else '[]' }};
+
+// ============================================
+// UTILITY FUNCTIONS
+// ============================================
+
+function getCsrfToken() {
+    var meta = document.querySelector('meta[name="csrf-token"]');
+    return meta ? meta.getAttribute('content') : '';
+}
+
+function showToast(message, type) {
+    type = type || 'success';
+    var toastElement = document.getElementById('notificationToast');
+    var toastBody = toastElement.querySelector('.toast-body');
+    var toastHeader = toastElement.querySelector('.toast-header');
+    var icon = toastHeader.querySelector('i');
+    
+    if (type === 'success') {
+        icon.className = 'fas fa-check-circle me-2 text-success';
+        toastHeader.querySelector('strong').textContent = 'Success';
+    } else if (type === 'error') {
+        icon.className = 'fas fa-exclamation-circle me-2 text-danger';
+        toastHeader.querySelector('strong').textContent = 'Error';
+    } else {
+        icon.className = 'fas fa-info-circle me-2 text-info';
+        toastHeader.querySelector('strong').textContent = 'Information';
+    }
+    
+    toastBody.textContent = message;
+    var toast = new bootstrap.Toast(toastElement, { delay: 5000 });
+    toast.show();
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    var div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function validateAccessPointForm(data) {
+    if (!data.name || data.name.trim().length < 2) {
+        showToast('Access Point Name must be at least 2 characters long', 'error');
+        return false;
+    }
+    if (data.name.length > 100) {
+        showToast('Access Point Name must be less than 100 characters', 'error');
+        return false;
+    }
+    if (!data.device_id) {
+        showToast('Please select a device to assign to this access point', 'error');
+        return false;
+    }
+    return true;
+}
+
+// ============================================
+// SEARCH FUNCTIONALITY
+// ============================================
+
+document.getElementById('searchAccessPoint').addEventListener('input', function(e) {
+    var searchTerm = e.target.value.toLowerCase();
+    var rows = document.querySelectorAll('#accessPointsTableBody tr');
+    var visibleCount = 0;
+    
+    rows.forEach(function(row) {
+        if (row.cells && row.cells.length > 0) {
+            var name = row.cells[1] ? row.cells[1].textContent.toLowerCase() : '';
+            var location = row.cells[2] ? row.cells[2].textContent.toLowerCase() : '';
+            var device = row.cells[3] ? row.cells[3].textContent.toLowerCase() : '';
+            var matches = name.includes(searchTerm) || location.includes(searchTerm) || device.includes(searchTerm);
+            row.style.display = matches ? '' : 'none';
+            if (matches) visibleCount++;
+        }
+    });
+    
+    var noResultsMsg = document.getElementById('noSearchResults');
+    if (!noResultsMsg && visibleCount === 0 && rows.length > 0) {
+        var tbody = document.getElementById('accessPointsTableBody');
+        noResultsMsg = document.createElement('tr');
+        noResultsMsg.id = 'noSearchResults';
+        noResultsMsg.innerHTML = '<td colspan="9" class="text-center py-4 text-muted"><i class="fas fa-search me-2"></i>No matching access points found</td>';
+        tbody.appendChild(noResultsMsg);
+    } else if (noResultsMsg && visibleCount > 0) {
+        noResultsMsg.remove();
+    }
+});
+
+// ============================================
+// REFRESH BUTTON
+// ============================================
+
+document.getElementById('refresh-access-points').addEventListener('click', function() {
+    var btn = this;
+    var originalHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
+    setTimeout(function() { location.reload(); }, 500);
+});
+
+// ============================================
+// CREATE ACCESS POINT
+// ============================================
+
+document.getElementById('addAccessPointForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    var formData = new FormData(this);
+    var data = {};
+    formData.forEach(function(value, key) { data[key] = value; });
+    
+    if (!validateAccessPointForm(data)) return;
+    
+    var submitBtn = this.querySelector('button[type="submit"]');
+    var originalHtml = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
+    
+    fetch('/api/access-points/add', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify(data)
+    })
+    .then(function(response) { return response.json(); })
+    .then(function(result) {
+        if (result.success) {
+            bootstrap.Modal.getInstance(document.getElementById('addAccessPointModal')).hide();
+            showToast('Access point created successfully!', 'success');
+            setTimeout(function() { location.reload(); }, 1000);
+        } else {
+            showToast(result.error || 'Failed to create access point', 'error');
+        }
+    })
+    .catch(function(error) {
+        console.error('Error:', error);
+        showToast('Network error. Please try again.', 'error');
+    })
+    .finally(function() {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalHtml;
+    });
+});
+
+// ============================================
+// EDIT ACCESS POINT
+// ============================================
+
+window.editAccessPoint = function(id) {
+    fetch('/api/access-points/' + id)
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+        if (data.success && data.point) {
+            document.getElementById('edit_point_id').value = data.point.id;
+            document.getElementById('edit_point_name').value = data.point.name || '';
+            document.getElementById('edit_point_location').value = data.point.location || '';
+            document.getElementById('edit_point_device_id').value = data.point.device_id || '';
+            document.getElementById('edit_point_status').value = data.point.status || 'active';
+            document.getElementById('edit_point_description').value = data.point.description || '';
+            
+            var modal = new bootstrap.Modal(document.getElementById('editAccessPointModal'));
+            modal.show();
+        } else {
+            showToast('Failed to load access point data', 'error');
+        }
+    })
+    .catch(function(error) {
+        console.error('Error:', error);
+        showToast('Failed to load access point data. Please check your connection.', 'error');
+    });
+};
+
+document.getElementById('editAccessPointForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    var formData = new FormData(this);
+    var data = {};
+    formData.forEach(function(value, key) { data[key] = value; });
+    var pointId = data.point_id;
+    delete data.point_id;
+    
+    if (!validateAccessPointForm(data)) return;
+    
+    var submitBtn = this.querySelector('button[type="submit"]');
+    var originalHtml = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    
+    fetch('/api/access-points/' + pointId + '/edit', {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify(data)
+    })
+    .then(function(response) { return response.json(); })
+    .then(function(result) {
+        if (result.success) {
+            bootstrap.Modal.getInstance(document.getElementById('editAccessPointModal')).hide();
+            showToast('Access point updated successfully!', 'success');
+            setTimeout(function() { location.reload(); }, 1000);
+        } else {
+            showToast(result.error || 'Failed to update access point', 'error');
+        }
+    })
+    .catch(function(error) {
+        console.error('Error:', error);
+        showToast('Network error. Please try again.', 'error');
+    })
+    .finally(function() {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalHtml;
+    });
+});
+
+// ============================================
+// VIEW ACCESS POINT DETAILS
+// ============================================
+
+window.viewAccessPointDetails = function(id) {
+    var modalElement = document.getElementById('viewAccessPointModal');
+    var modal = new bootstrap.Modal(modalElement);
+    var detailsContainer = document.getElementById('accessPointDetails');
+    
+    detailsContainer.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div><p class="mt-2 text-muted">Loading access point details...</p></div>';
+    modal.show();
+    
+    fetch('/api/access-points/' + id)
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+        if (data.success && data.point) {
+            var point = data.point;
+            var lastActivity = point.last_activity ? new Date(point.last_activity).toLocaleString() : 'Never';
+            var totalAccesses = point.total_accesses || 0;
+            var deviceInfo = point.device ? point.device.device_name + ' (' + point.device.device_id + ')' : 'No device assigned';
+            
+            detailsContainer.innerHTML = 
+                '<div class="row">' +
+                    '<div class="col-md-6">' +
+                        '<div class="mb-3"><label class="text-muted small text-uppercase fw-bold">Access Point Name</label><p class="fw-bold mb-0"><i class="fas fa-door-open text-primary me-2"></i>' + escapeHtml(point.name) + '</p></div>' +
+                        '<div class="mb-3"><label class="text-muted small text-uppercase fw-bold">Location</label><p class="mb-0"><i class="fas fa-map-marker-alt text-muted me-2"></i>' + (escapeHtml(point.location) || 'Not specified') + '</p></div>' +
+                        '<div class="mb-3"><label class="text-muted small text-uppercase fw-bold">Assigned Device</label><p class="mb-0"><i class="fas fa-microchip text-primary me-2"></i>' + escapeHtml(deviceInfo) + '</p></div>' +
+                        '<div class="mb-3"><label class="text-muted small text-uppercase fw-bold">Device Type</label><p class="mb-0"><span class="badge bg-secondary">' + escapeHtml(point.device_type ? point.device_type.replace(/_/g, ' ').replace(/\b\w/g, function(l) { return l.toUpperCase(); }) : 'Standard') + '</span></p></div>' +
+                    '</div>' +
+                    '<div class="col-md-6">' +
+                        '<div class="mb-3"><label class="text-muted small text-uppercase fw-bold">Status</label><p class="mb-0"><span class="badge ' + (point.status === 'active' ? 'bg-success' : point.status === 'maintenance' ? 'bg-warning' : 'bg-danger') + '"><i class="fas fa-' + (point.status === 'active' ? 'check-circle' : point.status === 'maintenance' ? 'tools' : 'times-circle') + ' me-1"></i>' + escapeHtml(point.status || 'Unknown') + '</span></p></div>' +
+                        '<div class="mb-3"><label class="text-muted small text-uppercase fw-bold">Total Accesses</label><p class="h3 text-primary mb-0">' + totalAccesses.toLocaleString() + '</p></div>' +
+                        '<div class="mb-3"><label class="text-muted small text-uppercase fw-bold">Last Activity</label><p class="mb-0">' + escapeHtml(lastActivity) + '</p></div>' +
+                    '</div>' +
+                    '<div class="col-12"><div class="mb-3"><label class="text-muted small text-uppercase fw-bold">Description</label><p class="mb-0 bg-light p-3 rounded">' + (escapeHtml(point.description) || 'No description provided') + '</p></div></div>' +
+                '</div>' +
+                '<hr><h6 class="mb-3"><i class="fas fa-history me-2"></i>Recent Activity</h6>' +
+                '<div class="table-responsive"><table class="table table-sm table-hover"><thead class="table-light"><tr><th>Time</th><th>Student</th><th>Result</th></tr></thead><tbody id="recentActivityBody"><tr><td colspan="3" class="text-center text-muted py-4"><i class="fas fa-info-circle me-2"></i>No recent activity recorded</td></tr></tbody></table></div>';
+        } else {
+            detailsContainer.innerHTML = '<div class="text-center py-4 text-danger"><i class="fas fa-exclamation-circle fa-3x mb-3"></i><p>Failed to load access point details</p><button class="btn btn-sm btn-outline-danger mt-2" onclick="viewAccessPointDetails(' + id + ')"><i class="fas fa-redo"></i> Try Again</button></div>';
+        }
+    })
+    .catch(function(error) {
+        console.error('Error:', error);
+        detailsContainer.innerHTML = '<div class="text-center py-4 text-danger"><i class="fas fa-exclamation-triangle fa-3x mb-3"></i><p>Network error. Please try again.</p><button class="btn btn-sm btn-outline-danger mt-2" onclick="viewAccessPointDetails(' + id + ')"><i class="fas fa-redo"></i> Retry</button></div>';
+    });
+};
+
+// ============================================
+// DELETE ACCESS POINT
+// ============================================
+
+window.deleteAccessPoint = function(id) {
+    if (confirm('⚠️ Are you sure you want to delete this access point?\n\nThis action cannot be undone and will remove all associated access logs.')) {
+        fetch('/api/access-points/' + id + '/delete', {
+            method: 'DELETE',
+            headers: { 'X-CSRFToken': getCsrfToken() }
+        })
+        .then(function(response) { return response.json(); })
+        .then(function(result) {
+            if (result.success) {
+                showToast('Access point deleted successfully!', 'success');
+                setTimeout(function() { location.reload(); }, 1000);
+            } else {
+                showToast(result.error || 'Failed to delete access point', 'error');
+            }
+        })
+        .catch(function(error) {
+            console.error('Error:', error);
+            showToast('Network error. Please try again.', 'error');
+        });
+    }
+};
+
+// ============================================
+// EXPORT ACCESS POINTS
+// ============================================
+
+window.exportAccessPoints = function() {
+    var exportBtn = document.getElementById('exportBtn');
+    var originalHtml = exportBtn.innerHTML;
+    exportBtn.disabled = true;
+    exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Exporting...';
+    
+    try {
+        window.location.href = '/api/access-points/export';
+        showToast('Export started. Your file will download shortly.', 'success');
+    } catch (error) {
+        showToast('Export failed. Please try again.', 'error');
+    } finally {
+        setTimeout(function() {
+            exportBtn.disabled = false;
+            exportBtn.innerHTML = originalHtml;
+        }, 2000);
+    }
+};
+
+// ============================================
+// CHARTS
+// ============================================
+
+function initCharts() {
+    // Top Access Points Usage Chart (Bar Chart)
+    var usageCtx = document.getElementById('accessPointsUsageChart');
+    if (usageCtx && accessPointsData && accessPointsData.length > 0) {
+        var sortedPoints = accessPointsData.slice().sort(function(a, b) {
+            return (b.total_accesses || 0) - (a.total_accesses || 0);
+        });
+        var topPoints = sortedPoints.slice(0, 5);
+        var labels = topPoints.map(function(p) {
+            return p.name.length > 20 ? p.name.substring(0, 18) + '...' : p.name;
+        });
+        var data = topPoints.map(function(p) {
+            return p.total_accesses || 0;
+        });
+        
+        new Chart(usageCtx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Total Accesses',
+                    data: data,
+                    backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { position: 'top' },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return 'Accesses: ' + context.raw.toLocaleString();
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: 'Number of Accesses' },
+                        ticks: {
+                            callback: function(value) { return value.toLocaleString(); }
+                        }
+                    }
+                }
+            }
+        });
+    } else if (usageCtx) {
+        usageCtx.parentElement.innerHTML = '<div class="text-center py-5 text-muted"><i class="fas fa-chart-bar fa-3x mb-3 opacity-25"></i><p>No access data available yet</p><small class="text-muted">Add access points and record accesses to see statistics</small></div>';
+    }
+    
+    // Status Distribution Pie Chart
+    var statusCtx = document.getElementById('accessPointsStatusChart');
+    if (statusCtx && accessPointsData && accessPointsData.length > 0) {
+        var activeCount = accessPointsData.filter(function(p) { return p.status === 'active'; }).length;
+        var maintenanceCount = accessPointsData.filter(function(p) { return p.status === 'maintenance'; }).length;
+        var inactiveCount = accessPointsData.filter(function(p) { return p.status === 'inactive'; }).length;
+        
+        new Chart(statusCtx, {
+            type: 'pie',
+            data: {
+                labels: ['Active', 'Maintenance', 'Inactive'],
+                datasets: [{
+                    data: [activeCount, maintenanceCount, inactiveCount],
+                    backgroundColor: ['#28a745', '#ffc107', '#dc3545'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                var total = activeCount + maintenanceCount + inactiveCount;
+                                var percentage = total > 0 ? ((context.raw / total) * 100).toFixed(1) : 0;
+                                return context.label + ': ' + context.raw + ' (' + percentage + '%)';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    } else if (statusCtx) {
+        statusCtx.parentElement.innerHTML = '<div class="text-center py-5 text-muted"><i class="fas fa-chart-pie fa-3x mb-3 opacity-25"></i><p>No status data available</p><small class="text-muted">Add access points to see status distribution</small></div>';
+    }
+}
+
+// ============================================
+// UPDATE LAST UPDATED TIME
+// ============================================
+
+function updateLastUpdated() {
+    var now = new Date();
+    var formatted = now.getFullYear() + '-' + 
+                    String(now.getMonth() + 1).padStart(2, '0') + '-' + 
+                    String(now.getDate()).padStart(2, '0') + ' ' +
+                    String(now.getHours()).padStart(2, '0') + ':' +
+                    String(now.getMinutes()).padStart(2, '0') + ':' +
+                    String(now.getSeconds()).padStart(2, '0');
+    var timeElement = document.getElementById('last-updated-time');
+    if (timeElement) {
+        timeElement.textContent = formatted;
+    }
+}
+
+// ============================================
+// DOM READY
+// ============================================
+
+document.addEventListener('DOMContentLoaded', function() {
+    initCharts();
+    setInterval(updateLastUpdated, 60000);
+});
+</script>
+
+<style>
+.action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    color: #495057;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+.action-btn:hover {
+    background: #e9ecef;
+    border-color: #adb5bd;
+    transform: translateY(-1px);
+}
+.action-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+.stat-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    cursor: default;
+}
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+#searchAccessPoint {
+    min-width: 250px;
+    border-radius: 20px;
+}
+.modal-lg {
+    max-width: 800px;
+}
+.required:after {
+    content: " *";
+    color: #dc3545;
+}
+.table-responsive {
+    border-radius: 8px;
+}
+.table th {
+    border-top: none;
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.badge {
+    font-weight: 500;
+    padding: 0.35em 0.65em;
+}
+.modal-header.bg-primary {
+    background: linear-gradient(135deg, #0061f2 0%, #6900c7 100%);
+}
+.toast-container {
+    z-index: 9999;
+}
+.card-footer {
+    border-top: 1px solid rgba(0,0,0,0.05);
+}
+@media (max-width: 768px) {
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start !important;
+    }
+    .page-actions {
+        margin-top: 10px;
+    }
+    .btn-group-sm .btn {
+        padding: 0.25rem 0.5rem;
+    }
+    #searchAccessPoint {
+        min-width: 180px;
+    }
+}
+</style>
+
+{% endblock %}

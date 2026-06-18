@@ -1,0 +1,37 @@
+Collecting face-recognition
+  Using cached face_recognition-1.3.0-py2.py3-none-any.whl.metadata (21 kB)
+Collecting face-recognition-models>=0.3.0 (from face-recognition)
+  Using cached face_recognition_models-0.3.0-py2.py3-none-any.whl
+Requirement already satisfied: Click>=6.0 in C:\Program Files\Python311\Lib\site-packages (from face-recognition) (8.3.1)
+Collecting dlib>=19.7 (from face-recognition)
+  Using cached dlib-20.0.1.tar.gz (3.3 MB)
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Getting requirements to build wheel: started
+  Getting requirements to build wheel: finished with status 'done'
+  Preparing metadata (pyproject.toml): started
+  Preparing metadata (pyproject.toml): finished with status 'done'
+Requirement already satisfied: numpy in C:\Program Files\Python311\Lib\site-packages (from face-recognition) (2.4.3)
+Requirement already satisfied: Pillow in C:\Program Files\Python311\Lib\site-packages (from face-recognition) (11.3.0)
+Requirement already satisfied: colorama in C:\Program Files\Python311\Lib\site-packages (from Click>=6.0->face-recognition) (0.4.6)
+Using cached face_recognition-1.3.0-py2.py3-none-any.whl (15 kB)
+Building wheels for collected packages: dlib
+  Building wheel for dlib (pyproject.toml): started
+  Building wheel for dlib (pyproject.toml): still running...
+  Building wheel for dlib (pyproject.toml): still running...
+  Building wheel for dlib (pyproject.toml): still running...
+  Building wheel for dlib (pyproject.toml): still running...
+  Building wheel for dlib (pyproject.toml): still running...
+  Building wheel for dlib (pyproject.toml): still running...
+  Building wheel for dlib (pyproject.toml): still running...
+  Building wheel for dlib (pyproject.toml): still running...
+  Building wheel for dlib (pyproject.toml): still running...
+  Building wheel for dlib (pyproject.toml): still running...
+  Building wheel for dlib (pyproject.toml): still running...
+  Building wheel for dlib (pyproject.toml): finished with status 'done'
+  Created wheel for dlib: filename=dlib-20.0.1-cp311-cp311-win_amd64.whl size=2732273 sha256=1fd7d342ca571765d515e1d9eb6d06b8d8b87bd9117282580b79191966c0d269
+  Stored in directory: c:\users\alukw\appdata\local\pip\cache\wheels\56\a8\fe\cdaa347540c83e794da01a64cf2d3b26b86effba19deb2e24d
+Successfully built dlib
+Installing collected packages: face-recognition-models, dlib, face-recognition
+
+Successfully installed dlib-20.0.1 face-recognition-1.3.0 face-recognition-models-0.3.0

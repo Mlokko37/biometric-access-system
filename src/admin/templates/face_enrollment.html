@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+
+{% block title %}Face Enrollment{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-header">
+                <h1><i class="fas fa-user-plus"></i> Face Enrollment</h1>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{{ url_for('students') }}">Students</a></li>
+                        <li class="breadcrumb-item active">Face Enrollment</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Enroll Student Face</h5>
+                </div>
+                <div class="card-body">
+                    <form id="enrollmentForm">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" id="student_id" name="student_id" value="{{ student.id }}">
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Student Information</label>
+                            <p><strong>Name:</strong> {{ student.full_name }}</p>
+                            <p><strong>Student ID:</strong> {{ student.student_id }}</p>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Face Capture</label>
+                            <div class="video-container" style="position: relative; max-width: 640px;">
+                                <video id="video" autoplay style="width: 100%; border: 2px solid #ddd; border-radius: 8px;"></video>
+                                <canvas id="canvas" style="display: none;"></canvas>
+                                <div id="overlay" style="position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); color: white; padding: 5px 10px; border-radius: 4px;">
+                                    <i class="fas fa-video"></i> Camera: <span id="cameraStatus">Loading...</span>
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <button type="button" class="btn btn-primary" id="captureBtn">
+                                    <i class="fas fa-camera"></i> Capture Face
+                                </button>
+                                <button type="button" class="btn btn-success" id="detectBtn">
+                                    <i class="fas fa-face-smile"></i> Detect Face
+                                </button>
+                            </div>
+                            <div id="detectionResult" class="mt-2"></div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Preview</label>
+                            <div id="previewContainer">
+                                <img id="previewImage" style="max-width: 200px; border: 1px solid #ddd; border-radius: 4px; display: none;">
+                                <div id="noImageMsg" class="text-muted">No image captured yet</div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('students') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary" id="enrollBtn">
+                                <i class="fas fa-save"></i> Enroll Face
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-info-circle"></i> Instructions</h5>
+                </div>
+                <div class="card-body">
+                    <ol>
+                        <li>Ensure good lighting on the student's face</li>
+                        <li>Student should look directly at the camera</li>
+                        <li>Remove glasses or masks if possible</li>
+                        <li>Capture face from multiple angles (optional)</li>
+                        <li>Click "Capture Face" when ready</li>
+                    </ol>
+                    <div class="alert alert-info mt-3">
+                        <i class="fas fa-lightbulb"></i>
+                        <strong>Tip:</strong> For best results, capture the face from different angles.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Get CSRF token
+function getCsrfToken() {
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    return meta ? meta.getAttribute('content') : '';
+}
+
+// Camera handling
+const video = document.getElementById('video');
+const canvas = document.getElementById('canvas');
+const previewImage = document.getElementById('previewImage');
+const noImageMsg = document.getElementById('noImageMsg');
+const cameraStatus = document.getElementById('cameraStatus');
+
+let stream = null;
+let capturedImages = [];
+
+// Start camera
+async function startCamera() {
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                width: { ideal: 640 },
+                height: { ideal: 480 }
+            }
+        });
+        video.srcObject = stream;
+        cameraStatus.textContent = 'Online';
+        cameraStatus.style.color = '#4CAF50';
+    } catch (error) {
+        console.error('Camera error:', error);
+        cameraStatus.textContent = 'Error: ' + error.message;
+        cameraStatus.style.color = '#f44336';
+        alert('Camera access denied. Please allow camera access and refresh.');
+    }
+}
+
+// Capture face
+document.getElementById('captureBtn').addEventListener('click', function() {
+    if (!stream) {
+        alert('Camera not available. Please allow camera access.');
+        return;
+    }
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const context = canvas.getContext('2d');
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    // Show preview
+    const imageData = canvas.toDataURL('image/jpeg');
+    previewImage.src = imageData;
+    previewImage.style.display = 'block';
+    noImageMsg.style.display = 'none';
+
+    // Store image data
+    capturedImages.push(imageData);
+
+    // Show success
+    showToast('Face captured successfully!', 'success');
+});
+
+// Detect face (using face-api.js or similar)
+document.getElementById('detectBtn').addEventListener('click', function() {
+    if (!previewImage.src || previewImage.style.display === 'none') {
+        alert('Please capture a face first.');
+        return;
+    }
+
+    // Simulate face detection
+    const resultDiv = document.getElementById('detectionResult');
+    resultDiv.innerHTML = `
+        <div class="alert alert-info">
+            <i class="fas fa-spinner fa-spin"></i> Detecting face...
+        </div>
+    `;
+
+    // Simulate detection (replace with actual API call)
+    setTimeout(() => {
+        resultDiv.innerHTML = `
+            <div class="alert alert-success">
+                <i class="fas fa-check-circle"></i> Face detected successfully!
+                <br><small>Confidence: 95%</small>
+            </div>
+        `;
+    }, 1000);
+});
+
+// Enrollment form
+document.getElementById('enrollmentForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    if (capturedImages.length === 0) {
+        alert('Please capture at least one face image.');
+        return;
+    }
+
+    const submitBtn = document.getElementById('enrollBtn');
+    const originalHtml = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enrolling...';
+
+    try {
+        // Send images to server
+        const response = await fetch('/api/enroll-face', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: JSON.stringify({
+                student_id: document.getElementById('student_id').value,
+                images: capturedImages
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showToast('Face enrollment successful!', 'success');
+            setTimeout(() => {
+                window.location.href = '/students';
+            }, 1500);
+        } else {
+            showToast(result.error || 'Enrollment failed', 'error');
+        }
+    } catch (error) {
+        console.error('Enrollment error:', error);
+        showToast('Network error. Please try again.', 'error');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalHtml;
+    }
+});
+
+// Start camera on page load
+document.addEventListener('DOMContentLoaded', startCamera);
+</script>
+{% endblock %}

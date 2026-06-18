@@ -1,0 +1,63 @@
+# Hardware device configurations
+
+# Fingerprint scanners
+fingerprint_scanners:
+  - device_id: "scanner_1"
+    type: "generic"
+    port: "COM3"  # Windows: COM3, Linux: /dev/ttyUSB0
+    baudrate: 9600
+    timeout: 5
+    location: "Main Entrance"
+    enabled: true
+
+  - device_id: "scanner_2"
+    type: "generic"
+    port: "COM4"
+    baudrate: 115200
+    timeout: 3
+    location: "Lab Entrance"
+    enabled: true
+
+# Facial recognition cameras
+facial_cameras:
+  - device_id: "camera_1"
+    camera_index: 0  # First webcam
+    confidence_threshold: 0.75
+    face_detection_model: "hog"  # "hog" (faster) or "cnn" (more accurate)
+    face_encoding_model: "large"
+    location: "Main Entrance"
+    enabled: true
+
+  - device_id: "camera_2"
+    camera_url: "rtsp://192.168.1.100:554/stream"  # For IP cameras
+    confidence_threshold: 0.70
+    face_detection_model: "hog"
+    face_encoding_model: "small"
+    location: "Library"
+    enabled: true
+
+# Access controllers (door locks, relays, etc.)
+access_controllers:
+  - device_id: "door_1"
+    type: "simulated"  # "gpio", "serial", "network", or "simulated"
+    location: "Main Door"
+    open_duration: 5  # seconds
+    enabled: true
+
+  - device_id: "gate_1"
+    type: "simulated"
+    location: "Main Gate"
+    open_duration: 10
+    enabled: true
+
+# System thresholds
+fingerprint_threshold: 70.0  # Minimum confidence for fingerprint recognition
+facial_threshold: 75.0  # Minimum confidence for facial recognition
+
+# Logging
+log_level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+
+# System settings
+auto_discover_devices: true
+test_on_startup: true
+save_logs: true

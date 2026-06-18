@@ -1,0 +1,217 @@
+﻿biometric-student-access-system\tree.ps1'
+|-- .pytest_cache
+|   |-- v
+|   |   +-- cache
+|   |       +-- nodeids
+|   |-- .gitignore
+|   |-- CACHEDIR.TAG
+|   +-- README.md
+|-- backups
+|   |-- backup_20260212_143300.sql
+|   +-- backup_20260214_180317.sql
+|-- data
+|   |-- backups
+|   |   +-- .gitkeep
+|   |-- captures
+|   |-- exports
+|   |-- logs
+|   |   |-- access_events.log
+|   |   |-- system_20260129.log
+|   |   |-- system_20260203.log
+|   |   |-- system_20260204.log
+|   |   |-- system_20260205.log
+|   |   |-- system_20260216.log
+|   |   +-- test_enrollment.log
+|   |-- sample_templates
+|   |   +-- .gitkeep
+|   |-- templates
+|   |   |-- facial
+|   |   +-- fingerprint
+|   +-- biometric_access.db
+|-- docs
+|   |-- api
+|   |-- design
+|   +-- user_manual
+|-- hardware
+|   +-- configs
+|       +-- devices.yaml
+|-- scripts
+|   |-- deployment
+|   |-- maintenance
+|   |-- create_hardware_structure.py
+|   |-- create_initial_admin.py
+|   |-- daily_report.py
+|   |-- generate_hash.py
+|   |-- hash_admin_passwords.py
+|   |-- init_db.py
+|   |-- migrate_to_supabase.py
+|   |-- schema.py
+|   +-- setup_admin_accounts.py
+|-- src
+|   |-- admin
+|   |   |-- services
+|   |   |   |-- admin_service.py
+|   |   |   |-- device_service.py
+|   |   |   |-- realtime.py
+|   |   |   +-- __init__.py
+|   |   |-- static
+|   |   |   |-- css
+|   |   |   |   +-- style.css
+|   |   |   |-- images
+|   |   |   |   |-- bg.png
+|   |   |   |   +-- kibabii_logo.png
+|   |   |   |-- js
+|   |   |   |   +-- main.js
+|   |   |   +-- uploads
+|   |   |-- templates
+|   |   |   |-- errors
+|   |   |   |   |-- 403.html
+|   |   |   |   |-- 404.html
+|   |   |   |   +-- 500.html
+|   |   |   |-- add_biometric.html
+|   |   |   |-- add_device.html
+|   |   |   |-- add_student.html
+|   |   |   |-- add_user.html
+|   |   |   |-- audit_logs.html
+|   |   |   |-- base.html
+|   |   |   |-- change_password.html
+|   |   |   |-- configuration.html
+|   |   |   |-- dashboard.html
+|   |   |   |-- database.html
+|   |   |   |-- devices.html
+|   |   |   |-- edit_device.html
+|   |   |   |-- edit_student.html
+|   |   |   |-- edit_user.html
+|   |   |   |-- login.html
+|   |   |   |-- logs.html
+|   |   |   |-- profile.html
+|   |   |   |-- reports.html
+|   |   |   |-- reset_password.html
+|   |   |   |-- students.html
+|   |   |   |-- student_report.html
+|   |   |   |-- system_settings.html
+|   |   |   |-- system_status.html
+|   |   |   |-- users.html
+|   |   |   |-- view_student.html
+|   |   |   +-- view_user.html
+|   |   |-- app.py
+|   |   |-- auth.py
+|   |   |-- dashboard.py
+|   |   |-- decorators.py
+|   |   |-- reports.py
+|   |   |-- roles.py
+|   |   |-- student_management.py
+|   |   |-- wsgi.py
+|   |   +-- __init__.py
+|   |-- config
+|   |   +-- dev_config.json
+|   |-- database
+|   |   |-- connection.py
+|   |   |-- firebase_auth.py
+|   |   +-- __init__.py
+|   |-- enrollment
+|   |   |-- biometric_processor.py
+|   |   |-- enroll_student.py
+|   |   |-- facial_capture.py
+|   |   |-- fingerprint_capture.py
+|   |   |-- template_manager.py
+|   |   +-- __init__.py
+|   |-- hardware
+|   |   |-- configs
+|   |   |   |-- camera_settings.yaml
+|   |   |   +-- devices.yaml
+|   |   |-- drivers
+|   |   |   |-- hikvision
+|   |   |   |   |-- hikvision_driver.py
+|   |   |   |   +-- __init__.py
+|   |   |   |-- suprema
+|   |   |   |   |-- suprema_driver.py
+|   |   |   |   +-- __init__.py
+|   |   |   |-- zkteco
+|   |   |   |   |-- zkteco_driver.py
+|   |   |   |   +-- __init__.py
+|   |   |   |-- access_controller.py
+|   |   |   |-- base_device.py
+|   |   |   |-- device_factory.py
+|   |   |   |-- facial_camera.py
+|   |   |   |-- fingerprint_scanner.py
+|   |   |   |-- hikvision_driver.py
+|   |   |   |-- suprema_driver.py
+|   |   |   |-- zkteco_driver.py
+|   |   |   +-- __init__.py
+|   |   |-- interfaces
+|   |   |   |-- access_controller.py
+|   |   |   |-- biometric_interface.py
+|   |   |   |-- camera_controller.py
+|   |   |   |-- facial_recognition.py
+|   |   |   |-- fingerprint_scanner.py
+|   |   |   +-- __init__.py
+|   |   |-- tests
+|   |   |   |-- quick_test.py
+|   |   |   |-- test_facial_recognition.py
+|   |   |   |-- test_fingerprint.py
+|   |   |   +-- test_hardware.py
+|   |   |-- utils
+|   |   |   |-- device_discovery.py
+|   |   |   |-- diagnostics.py
+|   |   |   |-- helpers.py
+|   |   |   |-- image_processing.py
+|   |   |   +-- __init__.py
+|   |   |-- config.py
+|   |   |-- device_service.py
+|   |   |-- hardware_manager.py
+|   |   |-- README.md
+|   |   |-- requirements.txt
+|   |   +-- __init__.py
+|   |-- utils
+|   |   |-- email.py
+|   |   |-- helpers.py
+|   |   |-- password_utils.py
+|   |   +-- __init__.py
+|   |-- verification
+|   |   |-- access_controller.py
+|   |   |-- biometric_matcher.py
+|   |   |-- logging_manager.py
+|   |   |-- verify_access.py
+|   |   +-- __init__.py
+|   +-- __init__.py
+|-- tests
+|   |-- integration
+|   |-- system
+|   |-- unit
+|   |-- quick_admin_test.py
+|   |-- quick_fix_test.py
+|   |-- system_test.py
+|   |-- test_admin.py
+|   |-- test_basic.py
+|   |-- test_enrollment.py
+|   +-- test_verification.py
+|-- ui
+|   |-- static
+|   +-- templates
+|-- .env
+|-- .env.example
+|-- .gitignore
+|-- .hintrc
+|-- ACADEMIC_COMPLIANCE.md
+|-- biometric-access-system-firebase-adminsdk-fbsvc-e139ea1770.json
+|-- CHANGELOG.md
+|-- config.yaml
+|-- DATABASE_SCHEMA.md
+|-- DEPLOYMENT.md
+|-- firebase-admin-key.json
+|-- fix_emojis.py
+|-- icon.html
+|-- LICENSE
+|-- location.reload())
+|-- main.py
+|-- PROJECT_STRUCTURE.md
+|-- pyrightconfig.json
+|-- README.md
+|-- requirements.txt
+|-- setup.py
+|-- test_supabase_connection.py
+|-- test_supabase_pooler.py
+|-- tree.ps1
+|-- TREE.txt
++-- z.txt

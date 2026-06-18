@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+
+{% block title %}Capture Student Photo{% endblock %}
+
+{% block content %}
+<!-- Add wrapper div with scrollbar styling -->
+<div class="dashboard-scroll-wrapper">
+    <div class="dashboard-container">
+        <div class="row">
+            <div class="col-12">
+                <div class="page-header">
+                    <h1><i class="fas fa-camera"></i> Capture Student Photo</h1>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{{ url_for('students') }}">Students</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">Capture Photo</li>
+                        </ol>
+                    </nav>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-7">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-video"></i> Camera Preview
+                        </h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <div class="camera-container">
+                            <video id="video" autoplay playsinline style="width: 100%; max-height: 400px; background: #000; border-radius: 10px;"></video>
+                            <canvas id="canvas" style="display: none;"></canvas>
+                        </div>
+                        <div class="mt-3">
+                            <button id="captureBtn" class="btn btn-primary btn-lg">
+                                <i class="fas fa-camera"></i> Capture Photo
+                            </button>
+                            <button id="retakeBtn" class="btn btn-secondary btn-lg" style="display: none;">
+                                <i class="fas fa-redo"></i> Retake
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-5">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-image"></i> Preview
+                        </h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <div id="noPhotoMsg" class="text-muted py-5">
+                            <i class="fas fa-camera fa-4x mb-3"></i>
+                            <p>Click "Capture Photo" to take a picture</p>
+                        </div>
+                        <img id="photo" src="#" alt="Captured photo" style="width: 100%; max-height: 300px; border-radius: 10px; display: none; object-fit: cover;">
+                        <div class="mt-3">
+                            <button id="savePhotoBtn" class="btn btn-success" style="display: none;">
+                                <i class="fas fa-save"></i> Save Photo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-info-circle"></i> Instructions
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <ul class="mb-0">
+                            <li>Ensure good lighting on the student's face</li>
+                            <li>Student should look directly at the camera</li>
+                            <li>Keep a neutral expression</li>
+                            <li>Remove glasses if possible for better recognition</li>
+                            <li>Click "Capture Photo" when ready</li>
+                            <li>Review the captured photo and click "Save Photo"</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Get DOM elements
+const video = document.getElementById('video');
+const canvas = document.getElementById('canvas');
+const photo = document.getElementById('photo');
+const captureBtn = document.getElementById('captureBtn');
+const retakeBtn = document.getElementById('retakeBtn');
+const savePhotoBtn = document.getElementById('savePhotoBtn');
+const noPhotoMsg = document.getElementById('noPhotoMsg');
+
+let stream = null;
+let capturedImageData = null;
+
+// Get student info from URL
+const urlParams = new URLSearchParams(window.location.search);
+const studentId = urlParams.get('student_id');
+const registrationNumber = urlParams.get('registration_number') || '';
+
+// Request camera access
+async function startCamera() {
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { 
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
+                facingMode: 'user'
+            } 
+        });
+        video.srcObject = stream;
+    } catch (err) {
+        console.error('Error accessing camera:', err);
+        alert('Unable to access camera. Please ensure you have granted camera permissions.');
+    }
+}
+
+// Capture photo from video stream
+function capturePhoto() {
+    const context = canvas.getContext('2d');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    // Convert to JPEG (quality 0.9)
+    capturedImageData = canvas.toDataURL('image/jpeg', 0.9);
+    photo.src = capturedImageData;
+    
+    // Show/hide elements
+    video.style.display = 'none';
+    photo.style.display = 'block';
+    noPhotoMsg.style.display = 'none';
+    captureBtn.style.display = 'none';
+    retakeBtn.style.display = 'inline-block';
+    savePhotoBtn.style.display = 'inline-block';
+}
+
+// Retake photo
+function retakePhoto() {
+    video.style.display = 'block';
+    photo.style.display = 'none';
+    noPhotoMsg.style.display = 'block';
+    captureBtn.style.display = 'inline-block';
+    retakeBtn.style.display = 'none';
+    savePhotoBtn.style.display = 'none';
+    capturedImageData = null;
+}
+
+// Save photo to server
+async function savePhoto() {
+    if (!capturedImageData) {
+        alert('No photo captured!');
+        return;
+    }
+    
+    savePhotoBtn.disabled = true;
+    savePhotoBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    
+    try {
+        // Get CSRF token from parent window or meta tag
+        let csrfToken = '';
+        if (window.opener) {
+            const meta = window.opener.document.querySelector('meta[name="csrf-token"]');
+            if (meta) csrfToken = meta.content;
+        }
+        
+        const response = await fetch('/students/save-photo', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({
+                student_id: parseInt(studentId),
+                image_data: capturedImageData,
+                registration_number: registrationNumber
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('Photo saved successfully!');
+            // Notify parent window to refresh
+            if (window.opener) {
+                window.opener.postMessage({ type: 'photo_saved' }, '*');
+            }
+            window.close();
+        } else {
+            alert('Error saving photo: ' + (data.error || 'Unknown error'));
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error saving photo. Please try again.');
+    } finally {
+        savePhotoBtn.disabled = false;
+        savePhotoBtn.innerHTML = '<i class="fas fa-save"></i> Save Photo';
+    }
+}
+
+// Stop camera when leaving page
+function stopCamera() {
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+    }
+}
+
+// Event listeners
+captureBtn.addEventListener('click', capturePhoto);
+retakeBtn.addEventListener('click', retakePhoto);
+savePhotoBtn.addEventListener('click', savePhoto);
+
+// Start camera on page load
+startCamera();
+
+// Stop camera when page is unloaded
+window.addEventListener('beforeunload', stopCamera);
+</script>
+
+<style>
+.camera-container {
+    background: #000;
+    border-radius: 10px;
+    overflow: hidden;
+    min-height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+video {
+    width: 100%;
+    object-fit: cover;
+}
+
+#photo {
+    object-fit: cover;
+}
+</style>
+{% endblock %}

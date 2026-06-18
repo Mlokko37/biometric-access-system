@@ -1,0 +1,18 @@
+[Unit]
+Description=Face Recognition Access Point
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/opt/access_point
+Environment="PYTHONPATH=/opt/access_point"
+ExecStart=/usr/bin/python3 /opt/access_point/main.py --config /etc/access_point/config.yaml
+Restart=always
+RestartSec=10
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=access_point
+
+[Install]
+WantedBy=multi-user.target

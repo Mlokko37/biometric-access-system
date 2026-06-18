@@ -1,0 +1,34 @@
+# Access Point Configuration
+access_point:
+  id: "AP-001"
+  name: "Main Gate"
+  location: "University Main Entrance"
+  
+server:
+  url: "http://your-server-ip:5000/api/access-point"
+  api_key: "your-api-key-here"
+  sync_interval: 300  # seconds
+  
+camera:
+  device_id: 0  # 0 for built-in, 1 for USB
+  resolution: [640, 480]
+  fps: 30
+  brightness: 50
+  contrast: 50
+  
+recognition:
+  confidence_threshold: 0.6
+  recognition_interval: 0.5  # seconds between attempts
+  
+lock:
+  gpio_pin: 17
+  unlock_duration: 5  # seconds
+  relay_active_high: true
+  
+logging:
+  level: INFO
+  file: /var/log/access_point.log
+  
+display:
+  enabled: true
+  type: "hdmi"  # hdmi, lcd, none

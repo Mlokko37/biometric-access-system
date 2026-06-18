@@ -1,0 +1,602 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Biometric Access System{% endblock %}
+
+{% block content %}
+
+    <!-- Add wrapper div with scrollbar styling -->
+    <div class="dashboard-scroll-wrapper">
+        <div class="dashboard-container">
+            <!-- Page Header -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="page-header">
+                        <h1 class="page-title">
+                            <i class="fas fa-tachometer-alt"></i> Biometric Access System
+                        </h1>
+                        <div class="page-actions">
+                            <span class="last-update">Last updated: <span id="last-updated-time">{{ system_info.server_time if system_info else 'Just now' }}</span></span>
+                            <button class="refresh-btn small" id="refresh-dashboard" onclick="refreshDashboard()">
+                                <i class="fas fa-sync-alt"></i> Refresh
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Dashboard Stats with real data -->
+            <div class="row mb-4">
+                <!-- Today's Accesses -->
+                <div class="col-md-3">
+                    <div class="card stat-card bg-primary text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="card-title">Today's Accesses</h6>
+                                    <h2 class="mb-0" id="today-accesses">{{ today_accesses }}</h2>                                    
+                                </div>
+                                <i class="fas fa-door-open fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Total Students -->
+                <div class="col-md-3">
+                    <div class="card stat-card bg-success text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="card-title">Total Students</h6>
+                                    <h2 class="mb-0" id="total-students">{{ total_students }}</h2>                                    
+                                </div>
+                                <i class="fas fa-users fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Weekly Accesses -->
+                <div class="col-md-3">
+                    <div class="card stat-card bg-info text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="card-title">Weekly Accesses</h6>
+                                    <h2 class="mb-0" id="weekly-accesses">{{ weekly_accesses }}</h2>
+                                    <small class="stat-subtitle">Last 7 days</small>
+                                </div>
+                                <i class="fas fa-chart-line fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- System Status -->
+                <div class="col-md-3">
+                    <a href="{{ url_for('system_settings') }}" class="stat-card-link">
+                        <div class="card stat-card bg-warning text-white">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="card-title">System Status</h6>
+                                        <h2 class="mb-0">
+                                            {% if system_status == 'Online' %}
+                                                <span class="status-indicator active">Online</span>
+                                            {% else %}
+                                                <span class="status-indicator inactive">Offline</span>
+                                            {% endif %}
+                                        </h2>                                        
+                                    </div>
+                                    <i class="fas fa-server fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+
+            <!-- ============================================ -->
+            <!-- CHARTS ROW - ADDED HERE -->
+            <!-- ============================================ -->
+            <div class="row mb-4">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-chart-line"></i> Daily Access Trends
+                            </h5>
+                            <div class="btn-group">
+                                <button class="btn btn-sm btn-outline-primary chart-period active" data-days="7">7 Days</button>
+                                <button class="btn btn-sm btn-outline-primary chart-period" data-days="14">14 Days</button>
+                                <button class="btn btn-sm btn-outline-primary chart-period" data-days="30">30 Days</button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="dailyAccessChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-door-open"></i> Top Access Points
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="accessPointsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-clock" aria-hidden="true"></i> Hourly Distribution
+                            </h5>
+                            <div>
+                                <label for="chart-date" class="visually-hidden">Select date for hourly distribution</label>
+                                <input type="date" id="chart-date" class="form-control form-control-sm" 
+                                    value="{{ now().strftime('%Y-%m-%d') }}">
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="hourlyAccessChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-graduation-cap"></i> Students by Course
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="studentCourseChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- ============================================ -->
+            <!-- END CHARTS ROW -->
+            <!-- ============================================ -->
+
+            <!-- Main Dashboard Content -->
+            <div class="row">
+                <!-- LEFT COLUMN (8 columns) -->
+                <div class="col-md-8">
+                    <!-- Recent Activities Section -->
+                    <div class="card mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0"><i class="fas fa-history"></i> Recent Activities</h5>
+                            <a href="{{ url_for('audit_logs') }}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-list"></i> View All Logs
+                            </a>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Time</th>
+                                            <th>Student</th>
+                                            <th>Access Point</th>
+                                            <th>Method</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% if recent_activities %}
+                                            {% for activity in recent_activities %}
+                                            <tr>
+                                                <td>
+                                                    <span class="time-badge">{{ activity.timestamp.strftime('%H:%M') }}</span>
+                                                    {{ activity.timestamp.strftime('%Y-%m-%d') }}
+                                                </td>
+                                                <td>
+                                                    <div class="user-cell">
+                                                        <i class="fas fa-user"></i>
+                                                        <span>{{ activity.student_name }}</span>
+                                                    </div>
+                                                </td>
+                                                <td>{{ activity.access_point or 'Main Entrance' }}</td>
+                                                <td>{{ activity.method or 'Biometric' }}</td>
+                                                <td>
+                                                    {% if activity.result == 'GRANTED' %}
+                                                    <span class="activity-type granted">Granted</span>
+                                                    {% else %}
+                                                    <span class="activity-type denied">Denied</span>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        {% else %}
+                                            <tr>
+                                                <td colspan="5" class="text-center py-4">
+                                                    <div class="empty-state">
+                                                        <i class="fas fa-history fa-2x text-muted"></i>
+                                                        <p class="text-muted mt-2">No recent activities found</p>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        {% endif %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- System Information Card -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0"><i class="fas fa-server"></i> System Information</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="list-group list-group-flush">
+                                        <div class="list-group-item d-flex justify-content-between">
+                                            <span><i class="fas fa-database me-2"></i>Database Status</span>
+                                            <span class="badge bg-success">{{ system_info.database_status }}</span>
+                                        </div>
+                                        <div class="list-group-item d-flex justify-content-between">
+                                            <span><i class="fas fa-hdd me-2"></i>Storage Usage</span>
+                                            <span class="badge bg-info">{{ system_info.storage_usage }}</span>
+                                        </div>
+                                        <div class="list-group-item d-flex justify-content-between">
+                                            <span><i class="fas fa-microchip me-2"></i>Active Devices</span>
+                                            <span class="badge {% if system_info.active_devices > 0 %}bg-success{% else %}bg-warning{% endif %}">
+                                                {{ system_info.active_devices }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="list-group list-group-flush">
+                                        <div class="list-group-item d-flex justify-content-between">
+                                            <span><i class="fas fa-plug me-2"></i>Total Devices</span>
+                                            <span class="badge bg-primary">{{ devices_count }}</span>
+                                        </div>
+                                        <div class="list-group-item d-flex justify-content-between">
+                                            <span><i class="fas fa-clock me-2"></i>System Uptime</span>
+                                            <span>{{ system_info.uptime }}</span>
+                                        </div>
+                                        <div class="list-group-item d-flex justify-content-between">
+                                            <span><i class="fas fa-shield-alt me-2"></i>System Health</span>
+                                            <span class="badge bg-success">{{ system_info.system_health }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hardware/Devices Section -->
+                    <div class="card mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0"><i class="fas fa-microchip"></i> Hardware Devices</h5>
+                            <div>
+                                <a href="{{ url_for('devices') }}" class="btn btn-sm btn-outline-primary me-2">
+                                    <i class="fas fa-cog"></i> Manage
+                                </a>
+                                <!-- "Create Table" button removed because the route does not exist and is not needed -->
+                                <a href="{{ url_for('add_device') }}" class="btn btn-sm btn-outline-success">
+                                    <i class="fas fa-plus"></i> Add Device
+                                </a>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            {% if devices %}
+                            <div class="row">
+                                {% for device in devices %}
+                                <div class="col-md-6 mb-3">
+                                    <div class="card device-card {% if device.status == 'online' %}border-success{% elif device.status == 'offline' %}border-danger{% else %}border-warning{% endif %}">
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div>
+                                                    <h6 class="card-title mb-1">
+                                                        <i class="fas 
+                                                            {% if device.device_type == 'scanner' %}fa-fingerprint
+                                                            {% elif device.device_type == 'camera' %}fa-video
+                                                            {% elif device.device_type == 'reader' %}fa-id-card
+                                                            {% else %}fa-microchip{% endif %}
+                                                        "></i>
+                                                        {{ device.device_name }}
+                                                    </h6>
+                                                    <p class="card-text text-muted small mb-1">
+                                                        <i class="fas fa-map-marker-alt"></i> {{ device.location or 'Not set' }}
+                                                    </p>
+                                                    <p class="card-text text-muted small">
+                                                        <i class="fas fa-network-wired"></i> {{ device.ip_address or 'No IP' }}
+                                                    </p>
+                                                </div>
+                                                <div class="text-end">
+                                                    <span class="badge {% if device.status == 'online' %}bg-success{% elif device.status == 'offline' %}bg-danger{% else %}bg-warning{% endif %}">
+                                                        {{ device.status|title }}
+                                                    </span>
+                                                    {% if device.last_seen %}
+                                                    <p class="small text-muted mb-0 mt-1">
+                                                        Last seen: {{ device.last_seen.strftime('%H:%M') }}
+                                                    </p>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="row mt-3">
+                                <div class="col-12">
+                                    <div class="d-flex justify-content-between small">
+                                        <div>
+                                            <span class="badge bg-success">●</span> Online: {{ active_devices }}
+                                        </div>
+                                        <div>
+                                            <span class="badge bg-danger">●</span> Offline: {{ offline_devices }}
+                                        </div>
+                                        <div>
+                                            <span class="badge bg-warning">●</span> Maintenance: {{ devices_count - active_devices - offline_devices }}
+                                        </div>
+                                        <div>
+                                            <strong>Total: {{ devices_count }}</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-microchip fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">No hardware devices configured.</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RIGHT COLUMN (4 columns) - STACKED VERTICALLY -->
+                <div class="col-md-4">
+                    <!-- QUICK ACTIONS - Top of right column -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0"><i class="fas fa-bolt"></i> Quick Actions</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="quick-actions">
+                                <a href="{{ url_for('add_student') }}" class="action-btn">
+                                    <i class="fas fa-user-plus"></i>
+                                    <span>Add New Student</span>
+                                </a>
+                                
+                                <a href="{{ url_for('reports') }}" class="action-btn">
+                                    <i class="fas fa-chart-bar"></i>
+                                    <span>Generate Report</span>
+                                </a>
+                                
+                                <a href="{{ url_for('logs') }}" class="action-btn">
+                                    <i class="fas fa-clipboard-list"></i>
+                                    <span>Audit Logs</span>
+                                </a>
+                                
+                                <a href="{{ url_for('students') }}" class="action-btn">
+                                    <i class="fas fa-users"></i>
+                                    <span>View Students</span>
+                                </a>
+                                
+                                <a href="{{ url_for('system_settings') }}" class="action-btn">
+                                    <i class="fas fa-cog"></i>
+                                    <span>System Settings</span>
+                                </a>
+                                
+                                <a href="{{ url_for('user_management') }}" class="action-btn">
+                                    <i class="fas fa-user-cog"></i>
+                                    <span>Manage Users</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- STATUS OVERVIEW - Bottom of right column -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0"><i class="fas fa-check-circle"></i> Status Overview</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="status-list">
+                                <div class="status-item success">
+                                    <i class="fas fa-check"></i>
+                                    <span>Authentication Service</span>
+                                    <span class="status-indicator active">Active</span>
+                                </div>
+                                <div class="status-item success">
+                                    <i class="fas fa-check"></i>
+                                    <span>Database Connection</span>
+                                    <span class="status-indicator active">Active</span>
+                                </div>
+                                <div class="status-item {% if system_status == 'Online' %}success{% else %}warning{% endif %}">
+                                    <i class="fas {% if system_status == 'Online' %}fa-check{% else %}fa-exclamation-triangle{% endif %}"></i>
+                                    <span>Biometric Devices</span>
+                                    <span class="status-indicator {% if system_status == 'Online' %}active{% endif %}">
+                                        {% if system_status == 'Online' %}Active{% else %}Check Devices{% endif %}
+                                    </span>
+                                </div>
+                                <div class="status-item warning">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    <span>Backup System</span>
+                                    <span class="status-indicator">Pending</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Access Distribution Full Width Section -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0"><i class="fas fa-chart-pie"></i> Access Distribution</h5>
+                        </div>
+                        <div class="card-body">
+                            <h6 class="card-subtitle mb-3">Top Access Points</h6>
+                            {% if access_distribution %}
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="list-group">
+                                        {% for point in access_distribution[:5] %}
+                                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <i class="fas fa-door-open text-primary me-2"></i>
+                                                {{ point.access_point or 'Unknown' }}
+                                            </div>
+                                            <span class="badge bg-primary rounded-pill">{{ point.count }}</span>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    {% if access_distribution|length > 5 %}
+                                    <div class="list-group">
+                                        {% for point in access_distribution[5:10] %}
+                                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <i class="fas fa-door-open text-primary me-2"></i>
+                                                {{ point.access_point or 'Unknown' }}
+                                            </div>
+                                            <span class="badge bg-primary rounded-pill">{{ point.count }}</span>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    {% else %}
+                                    <div class="text-center py-4">
+                                        <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
+                                        <p class="text-muted">More access points will appear as usage increases</p>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-chart-pie fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">No access data available yet.</p>
+                                <small class="text-muted">Access logs will appear here after students use the system.</small>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add SocketIO client library -->
+<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+
+<script>
+    // Connect to SocketIO
+    var socket = io();
+    
+    // Connection established
+    socket.on('connect', function() {
+        console.log('Connected to real-time server');
+        socket.emit('subscribe_dashboard');
+    });
+    
+    // New access event received
+    socket.on('new_access', function(data) {
+        console.log('New access:', data);
+        
+        // Update recent activities table
+        updateRecentActivities(data);
+        
+        // Update stats
+        updateStats(data);
+        
+        // Play sound if granted/denied
+        if (data.verification_result === 'GRANTED') {
+            playGrantedSound();
+        } else {
+            playDeniedSound();
+        }
+    });
+    
+    // Stats update received
+    socket.on('stats_update', function(data) {
+        $('#total-today').text(data.total_today);
+        $('#granted-today').text(data.granted_today);
+        $('#denied-today').text(data.denied_today);
+        $('#last-updated').text(new Date(data.last_updated).toLocaleTimeString());
+    });
+    
+    // Device status update
+    socket.on('device_status_update', function(data) {
+        $(`#device-${data.device_id} .status`).text(data.status);
+        if (data.status === 'online') {
+            $(`#device-${data.device_id}`).addClass('online').removeClass('offline');
+        } else {
+            $(`#device-${data.device_id}`).addClass('offline').removeClass('online');
+        }
+    });
+    
+    // Update recent activities table
+    function updateRecentActivities(access) {
+        var row = `
+            <tr>
+                <td>${new Date().toLocaleTimeString()}</td>
+                <td>${access.student_name}</td>
+                <td>${access.verification_method}</td>
+                <td class="${access.verification_result === 'GRANTED' ? 'text-success' : 'text-danger'}">
+                    ${access.verification_result}
+                </td>
+                <td>${access.access_point}</td>
+            </tr>
+        `;
+        $('#recent-activities-table').prepend(row);
+        
+        // Keep only last 20 rows
+        if ($('#recent-activities-table tr').length > 20) {
+            $('#recent-activities-table tr:last').remove();
+        }
+    }
+    
+    // Play notification sounds
+    function playGrantedSound() {
+        var audio = new Audio('/static/sounds/granted.mp3');
+        audio.play();
+    }
+    
+    function playDeniedSound() {
+        var audio = new Audio('/static/sounds/denied.mp3');
+        audio.play();
+    }
+    
+    // Auto-refresh fallback (if WebSocket fails)
+    setInterval(function() {
+        if (!socket.connected) {
+            $.get('/api/realtime/dashboard_data', function(data) {
+                updateDashboard(data);
+            });
+        }
+    }, 5000);
+    
+    function updateDashboard(data) {
+        if (data.stats) {
+            $('#total-today').text(data.stats.total_accesses || 0);
+            $('#granted-today').text(data.stats.granted_accesses || 0);
+            $('#denied-today').text(data.stats.denied_accesses || 0);
+        }
+        
+        if (data.recent_accesses) {
+            data.recent_accesses.forEach(updateRecentActivities);
+        }
+    }
+</script>
+
+{% endblock %}

@@ -1,0 +1,577 @@
+{% extends "base.html" %}
+
+{% block title %}Reports - Biometric Access Control System{% endblock %}
+
+{% block content %}
+<!-- Add wrapper div with scrollbar styling -->
+<div class="dashboard-scroll-wrapper">
+    <div class="dashboard-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1 class="page-title">
+                <i class="fas fa-chart-bar"></i> Reports & Analytics
+            </h1>
+            <div class="page-actions">
+                <span class="page-subtitle">Generate and analyze access reports</span>
+                <button class="refresh-btn small" id="refresh-reports" aria-label="Refresh reports">
+                    <i class="fas fa-sync-alt" aria-hidden="true"></i> Refresh
+                </button>
+            </div>
+        </div>
+
+        <!-- Report Cards Grid with Horizontal Scroll -->
+        <div class="report-scroll-wrapper">
+            <div class="reports-grid">
+                <div class="report-card">
+                    <div class="report-card-header">
+                        <div class="report-icon daily" aria-hidden="true">
+                            <i class="fas fa-calendar-day"></i>
+                        </div>
+                        <div class="report-title">
+                            <h3>Daily Report</h3>
+                            <p class="report-desc">Access statistics by day</p>
+                        </div>
+                    </div>
+                    <p class="report-details">
+                        View daily access patterns, peak hours, and activity trends across all access points.
+                    </p>
+                    <button class="report-btn" onclick="loadReport('daily')" aria-label="Generate daily report">
+                        <i class="fas fa-file-chart-column" aria-hidden="true"></i>
+                        Generate Report
+                    </button>
+                </div>
+
+                <div class="report-card">
+                    <div class="report-card-header">
+                        <div class="report-icon hourly" aria-hidden="true">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="report-title">
+                            <h3>Hourly Report</h3>
+                            <p class="report-desc">Access patterns by hour</p>
+                        </div>
+                    </div>
+                    <p class="report-details">
+                        Analyze hourly traffic, identify busy periods, and optimize security deployment.
+                    </p>
+                    <button class="report-btn" onclick="loadReport('hourly')" aria-label="Generate hourly report">
+                        <i class="fas fa-chart-line" aria-hidden="true"></i>
+                        Generate Report
+                    </button>
+                </div>
+
+                <div class="report-card">
+                    <div class="report-card-header">
+                        <div class="report-icon student" aria-hidden="true">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="report-title">
+                            <h3>Student Report</h3>
+                            <p class="report-desc">Student access activity</p>
+                        </div>
+                    </div>
+                    <p class="report-details">
+                        Track individual student access patterns, frequency, and compliance with access policies.
+                    </p>
+                    <button class="report-btn" onclick="loadReport('student')" aria-label="Generate student report">
+                        <i class="fas fa-user-check" aria-hidden="true"></i>
+                        Generate Report
+                    </button>
+                </div>
+
+                <div class="report-card">
+                    <div class="report-card-header">
+                        <div class="report-icon custom" aria-hidden="true">
+                            <i class="fas fa-chart-pie"></i>
+                        </div>
+                        <div class="report-title">
+                            <h3>Custom Report</h3>
+                            <p class="report-desc">Create custom reports</p>
+                        </div>
+                    </div>
+                    <p class="report-details">
+                        Build tailored reports with specific filters, metrics, and visualization options.
+                    </p>
+                    <button class="report-btn" onclick="showCustomReport()" aria-label="Customize report">
+                        <i class="fas fa-sliders" aria-hidden="true"></i>
+                        Customize
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Report Filters -->
+        <div class="filter-section">
+            <div class="section-header">
+                <div class="header-title">
+                    <h2 class="section-title">
+                        <i class="fas fa-filter" aria-hidden="true"></i> Report Filters
+                    </h2>
+                    <span class="filter-badge" id="activeFiltersCount" aria-live="polite">0 filters active</span>
+                </div>
+                <div class="filter-actions">
+                    <button class="filter-btn secondary" onclick="resetFilters()" id="resetFiltersBtn" aria-label="Reset all filters">
+                        <i class="fas fa-undo" aria-hidden="true"></i> Reset All
+                    </button>
+                    <button class="filter-btn primary" onclick="applyFilters()" id="applyFiltersBtn" aria-label="Apply filters">
+                        <i class="fas fa-check" aria-hidden="true"></i> Apply Filters
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Filter Categories -->
+            <div class="filter-grid">
+                <!-- Date & Time Group -->
+                <div class="filter-group-card">
+                    <div class="filter-group-header">
+                        <i class="fas fa-clock" aria-hidden="true"></i>
+                        <span>Date & Time</span>
+                    </div>
+                    <div class="filter-group-content">
+                        <div class="filter-item">
+                            <label for="dateFrom" class="filter-label">
+                                <i class="far fa-calendar-alt" aria-hidden="true"></i> Date Range
+                            </label>
+                            <div class="filter-row">
+                                <div class="filter-field">
+                                    <input type="date" class="filter-input" id="dateFrom" name="date_from" 
+                                           title="Start date" aria-label="Start date">
+                                    <span class="field-hint">Start date</span>
+                                </div>
+                                <div class="filter-field">
+                                    <input type="date" class="filter-input" id="dateTo" name="date_to" 
+                                           title="End date" aria-label="End date">
+                                    <span class="field-hint">End date</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="filter-item">
+                            <label for="timeFrom" class="filter-label">
+                                <i class="far fa-clock" aria-hidden="true"></i> Time Range
+                            </label>
+                            <div class="filter-row">
+                                <div class="filter-field">
+                                    <input type="time" class="filter-input" id="timeFrom" name="time_from" 
+                                           title="Start time" aria-label="Start time">
+                                    <span class="field-hint">Start time</span>
+                                </div>
+                                <div class="filter-field">
+                                    <input type="time" class="filter-input" id="timeTo" name="time_to" 
+                                           title="End time" aria-label="End time">
+                                    <span class="field-hint">End time</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Location & Student Group -->
+                <div class="filter-group-card">
+                    <div class="filter-group-header">
+                        <i class="fas fa-map-marker-alt" aria-hidden="true"></i>
+                        <span>Location & Student</span>
+                    </div>
+                    <div class="filter-group-content">
+                        <div class="filter-item">
+                            <label for="accessPoint" class="filter-label">
+                                <i class="fas fa-door-open" aria-hidden="true"></i> Access Point
+                            </label>
+                            <select class="filter-select" id="accessPoint" name="access_point" 
+                                    title="Select access point" aria-label="Access point">
+                                <option value="">All Access Points</option>
+                                <option value="main-gate">Main Gate</option>
+                                <option value="lab-access">Lab Access</option>
+                                <option value="library">Library</option>
+                                <option value="admin-office">Admin Office</option>
+                                <option value="server-room">Server Room</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-item">
+                            <label for="studentId" class="filter-label">
+                                <i class="fas fa-id-card" aria-hidden="true"></i> Student ID
+                            </label>
+                            <div class="filter-input-wrapper">
+                                <i class="fas fa-search input-icon" aria-hidden="true"></i>
+                                <input type="text" class="filter-input with-icon" id="studentId" name="student_id" 
+                                       placeholder="e.g., STU001, STU002" title="Enter student ID" 
+                                       aria-label="Student ID" aria-describedby="studentIdHint">
+                            </div>
+                            <span class="field-hint" id="studentIdHint">Enter multiple IDs separated by commas</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Access Type & Format Group -->
+                <div class="filter-group-card">
+                    <div class="filter-group-header">
+                        <i class="fas fa-cog" aria-hidden="true"></i>
+                        <span>Access & Output</span>
+                    </div>
+                    <div class="filter-group-content">
+                        <div class="filter-item">
+                            <label for="accessType" class="filter-label">
+                                <i class="fas fa-tag" aria-hidden="true"></i> Access Status
+                            </label>
+                            <select class="filter-select" id="accessType" name="access_type" 
+                                    title="Select access status" aria-label="Access status">
+                                <option value="">All Statuses</option>
+                                <option value="GRANTED" class="option-granted">✓ Granted</option>
+                                <option value="DENIED" class="option-denied">✗ Denied</option>
+                                <option value="PENDING" class="option-pending">⏳ Pending</option>
+                                <option value="SCHEDULED" class="option-scheduled">📅 Scheduled</option>
+                            </select>
+                        </div>
+
+                        <fieldset class="filter-item">
+                            <legend class="filter-label">
+                                <i class="fas fa-file-export" aria-hidden="true"></i> Output Format
+                            </legend>
+                            <div class="format-options">
+                                <label class="format-option">
+                                    <input type="radio" name="reportFormat" value="table" checked>
+                                    <i class="fas fa-table" aria-hidden="true"></i>
+                                    <span>Table</span>
+                                </label>
+                                <label class="format-option">
+                                    <input type="radio" name="reportFormat" value="csv">
+                                    <i class="fas fa-file-csv" aria-hidden="true"></i>
+                                    <span>CSV</span>
+                                </label>
+                                <label class="format-option">
+                                    <input type="radio" name="reportFormat" value="pdf">
+                                    <i class="fas fa-file-pdf" aria-hidden="true"></i>
+                                    <span>PDF</span>
+                                </label>
+                                <label class="format-option">
+                                    <input type="radio" name="reportFormat" value="excel">
+                                    <i class="fas fa-file-excel" aria-hidden="true"></i>
+                                    <span>Excel</span>
+                                </label>
+                            </div>
+                        </fieldset>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Filter Presets -->
+            <div class="filter-footer">
+                <div class="filter-presets">
+                    <span class="presets-label">
+                        <i class="fas fa-bolt" aria-hidden="true"></i> Quick Presets:
+                    </span>
+                    <div class="preset-buttons">
+                        <button class="preset-btn" onclick="setDatePreset('today')" data-preset="today" 
+                                aria-label="Set date to today">
+                            <i class="far fa-calendar-check" aria-hidden="true"></i> Today
+                        </button>
+                        <button class="preset-btn" onclick="setDatePreset('yesterday')" data-preset="yesterday" 
+                                aria-label="Set date to yesterday">
+                            <i class="far fa-calendar" aria-hidden="true"></i> Yesterday
+                        </button>
+                        <button class="preset-btn" onclick="setDatePreset('week')" data-preset="week" 
+                                aria-label="Set date to this week">
+                            <i class="far fa-calendar-alt" aria-hidden="true"></i> This Week
+                        </button>
+                        <button class="preset-btn" onclick="setDatePreset('month')" data-preset="month" 
+                                aria-label="Set date to this month">
+                            <i class="far fa-calendar" aria-hidden="true"></i> This Month
+                        </button>
+                        <button class="preset-btn" onclick="setDatePreset('quarter')" data-preset="quarter" 
+                                aria-label="Set date to this quarter">
+                            <i class="fas fa-chart-line" aria-hidden="true"></i> This Quarter
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="active-filters" id="activeFilters">
+                    <span class="active-filters-label">Active:</span>
+                    <div class="filter-tags" id="filterTags">
+                    </div>
+                    <button class="clear-filters-btn" onclick="clearAllFilters()" aria-label="Clear all filters">
+                        <i class="fas fa-times" aria-hidden="true"></i> Clear all
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions with Horizontal Scroll -->
+        <div class="report-scroll-wrapper">
+            <div class="quick-actions-section">
+                <h2 class="section-title">
+                    <i class="fas fa-bolt" aria-hidden="true"></i> Quick Export
+                </h2>
+                <div class="export-buttons">
+                    <a href="{{ url_for('generate_report_csv') }}" class="export-btn csv" 
+                       aria-label="Download CSV report">
+                        <i class="fas fa-file-csv" aria-hidden="true"></i>
+                        <span>Download CSV</span>
+                    </a>
+                    <a href="{{ url_for('generate_report_pdf') }}" class="export-btn pdf" 
+                       aria-label="Download PDF report">
+                        <i class="fas fa-file-pdf" aria-hidden="true"></i>
+                        <span>Download PDF</span>
+                    </a>
+                    <button class="export-btn excel" onclick="exportToExcel()" aria-label="Export to Excel">
+                        <i class="fas fa-file-excel" aria-hidden="true"></i>
+                        <span>Export to Excel</span>
+                    </button>
+                    <button class="export-btn print" onclick="printReport()" aria-label="Print report">
+                        <i class="fas fa-print" aria-hidden="true"></i>
+                        <span>Print Report</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Report Results Area with Table Scroll -->
+        <div class="report-results">
+            <div class="results-header">
+                <h2 class="section-title">
+                    <i class="fas fa-chart-line" aria-hidden="true"></i> Report Results
+                </h2>
+                <div class="results-info" id="resultsInfo">
+                    <span class="report-type">No report selected</span>
+                    <span class="report-count">0 records</span>
+                </div>
+            </div>
+            
+            <div id="reportResults">
+                <div class="report-placeholder">
+                    <div class="placeholder-icon" aria-hidden="true">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                    <h3>No Report Generated</h3>
+                    <p class="placeholder-text">
+                        Select a report type above and click "Generate Report" to view analytics
+                    </p>
+                    <div class="placeholder-tips">
+                        <div class="tip">
+                            <i class="fas fa-lightbulb" aria-hidden="true"></i>
+                            <span>Tip: Use filters to narrow down your data</span>
+                        </div>
+                        <div class="tip">
+                            <i class="fas fa-chart-pie" aria-hidden="true"></i>
+                            <span>Multiple export formats available</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="report-table-container">
+                <table class="report-table" id="reportDataTable" aria-label="Report data table">
+                    <thead>
+                        <tr>
+                            <th scope="col"><i class="fas fa-calendar" aria-hidden="true"></i> Date</th>
+                            <th scope="col"><i class="fas fa-clock" aria-hidden="true"></i> Time</th>
+                            <th scope="col"><i class="fas fa-id-card" aria-hidden="true"></i> Student ID</th>
+                            <th scope="col"><i class="fas fa-user" aria-hidden="true"></i> Student Name</th>
+                            <th scope="col"><i class="fas fa-door-open" aria-hidden="true"></i> Access Point</th>
+                            <th scope="col"><i class="fas fa-tag" aria-hidden="true"></i> Access Type</th>
+                            <th scope="col"><i class="fas fa-check-circle" aria-hidden="true"></i> Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reportTableBody">
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="report-stats" id="reportStats">
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-label">Total Records</div>
+                        <div class="stat-value" id="totalRecords" aria-live="polite">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Access Granted</div>
+                        <div class="stat-value" id="accessGranted" aria-live="polite">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Access Denied</div>
+                        <div class="stat-value" id="accessDenied" aria-live="polite">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Avg. Daily</div>
+                        <div class="stat-value" id="avgDaily" aria-live="polite">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    window.loadReport = function(type) {
+        const reportResults = document.getElementById('reportResults');
+        const reportDataTable = document.getElementById('reportDataTable');
+        const reportStats = document.getElementById('reportStats');
+        const resultsInfo = document.querySelector('.report-type');
+        const reportCount = document.querySelector('.report-count');
+        
+        reportResults.innerHTML = `
+            <div class="report-loading">
+                <div class="loading-spinner">
+                    <i class="fas fa-spinner" aria-hidden="true"></i>
+                </div>
+                <p>Generating ${type} report...</p>
+            </div>
+        `;
+        
+        setTimeout(function() {
+            reportDataTable.style.display = 'table';
+            reportStats.style.display = 'block';
+            reportResults.innerHTML = '';
+            
+            resultsInfo.textContent = type.charAt(0).toUpperCase() + type.slice(1) + ' Report';
+            reportCount.textContent = '25 records';
+            
+            populateSampleData();
+        }, 1500);
+    };
+
+    window.showCustomReport = function() {
+        alert('Custom report builder will open');
+    };
+
+    window.resetFilters = function() {
+        document.querySelectorAll('.filter-input, .filter-select').forEach(function(input) {
+            input.value = '';
+        });
+        
+        const activeFilters = document.getElementById('activeFilters');
+        if (activeFilters) {
+            activeFilters.style.display = 'none';
+        }
+        
+        const filterBadge = document.getElementById('activeFiltersCount');
+        if (filterBadge) {
+            filterBadge.textContent = '0 filters active';
+        }
+    };
+
+    window.applyFilters = function() {
+        const activeInputs = document.querySelectorAll('.filter-input, .filter-select').length;
+        const filterBadge = document.getElementById('activeFiltersCount');
+        
+        if (filterBadge) {
+            filterBadge.textContent = activeInputs + ' filters active';
+        }
+        
+        const activeFilters = document.getElementById('activeFilters');
+        if (activeFilters) {
+            activeFilters.style.display = 'flex';
+        }
+        
+        alert('Filters applied');
+    };
+
+    window.setDatePreset = function(preset) {
+        const today = new Date();
+        const dateFrom = document.getElementById('dateFrom');
+        const dateTo = document.getElementById('dateTo');
+        
+        if (!dateFrom || !dateTo) return;
+        
+        switch(preset) {
+            case 'today':
+                dateFrom.value = today.toISOString().split('T')[0];
+                dateTo.value = today.toISOString().split('T')[0];
+                break;
+            case 'yesterday':
+                const yesterday = new Date(today);
+                yesterday.setDate(yesterday.getDate() - 1);
+                dateFrom.value = yesterday.toISOString().split('T')[0];
+                dateTo.value = yesterday.toISOString().split('T')[0];
+                break;
+            case 'week':
+                const weekStart = new Date(today);
+                weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1);
+                dateFrom.value = weekStart.toISOString().split('T')[0];
+                dateTo.value = today.toISOString().split('T')[0];
+                break;
+            case 'month':
+                const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+                dateFrom.value = monthStart.toISOString().split('T')[0];
+                dateTo.value = today.toISOString().split('T')[0];
+                break;
+            case 'quarter':
+                const quarterStart = new Date(today.getFullYear(), Math.floor(today.getMonth() / 3) * 3, 1);
+                dateFrom.value = quarterStart.toISOString().split('T')[0];
+                dateTo.value = today.toISOString().split('T')[0];
+                break;
+        }
+        
+        document.querySelectorAll('.preset-btn').forEach(function(btn) {
+            btn.classList.remove('active');
+        });
+        event.currentTarget.classList.add('active');
+    };
+
+    window.exportToExcel = function() {
+        alert('Exporting to Excel...');
+    };
+
+    window.printReport = function() {
+        window.print();
+    };
+
+    window.clearAllFilters = function() {
+        resetFilters();
+    };
+
+    function populateSampleData() {
+        const sampleData = [
+            { date: '2024-01-15', time: '08:23', id: 'STU001', name: 'John Doe', point: 'Main Gate', type: 'GRANTED', status: 'success' },
+            { date: '2024-01-15', time: '09:45', id: 'STU002', name: 'Jane Smith', point: 'Lab Access', type: 'GRANTED', status: 'success' },
+            { date: '2024-01-15', time: '10:12', id: 'STU003', name: 'Bob Johnson', point: 'Library', type: 'DENIED', status: 'danger' },
+            { date: '2024-01-15', time: '11:30', id: 'STU004', name: 'Alice Brown', point: 'Main Gate', type: 'GRANTED', status: 'success' },
+            { date: '2024-01-15', time: '13:15', id: 'STU005', name: 'Charlie Wilson', point: 'Lab Access', type: 'GRANTED', status: 'success' }
+        ];
+        
+        const tbody = document.getElementById('reportTableBody');
+        if (!tbody) return;
+        
+        tbody.innerHTML = '';
+        
+        sampleData.forEach(function(record) {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${record.date}</td>
+                <td>${record.time}</td>
+                <td><strong>${record.id}</strong></td>
+                <td>${record.name}</td>
+                <td>${record.point}</td>
+                <td>${record.type}</td>
+                <td><span class="status-badge ${record.status}">${record.type}</span></td>
+            `;
+            tbody.appendChild(row);
+        });
+        
+        const totalRecords = document.getElementById('totalRecords');
+        const accessGranted = document.getElementById('accessGranted');
+        const accessDenied = document.getElementById('accessDenied');
+        const avgDaily = document.getElementById('avgDaily');
+        
+        if (totalRecords) totalRecords.textContent = '25';
+        if (accessGranted) accessGranted.textContent = '20';
+        if (accessDenied) accessDenied.textContent = '5';
+        if (avgDaily) avgDaily.textContent = '12';
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const today = new Date();
+        const dateFrom = document.getElementById('dateFrom');
+        const dateTo = document.getElementById('dateTo');
+        
+        if (dateFrom && dateTo) {
+            const weekStart = new Date(today);
+            weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1);
+            dateFrom.value = weekStart.toISOString().split('T')[0];
+            dateTo.value = today.toISOString().split('T')[0];
+        }
+    });
+})();
+</script>
+{% endblock %}

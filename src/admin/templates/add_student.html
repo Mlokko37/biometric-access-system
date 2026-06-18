@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% block title %}Add New Student{% endblock %}
+
+{% block content %}
+<!-- Add wrapper div with scrollbar styling -->
+<div class="dashboard-scroll-wrapper">
+    <div class="dashboard-container">
+        <div class="row">
+            <div class="col-12">
+                <div class="page-header">
+                    <h1><i class="fas fa-user-plus"></i> Add New Student</h1>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{{ url_for('students') }}">Students</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">Add New Student</li>
+                        </ol>
+                    </nav>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-user-graduate"></i> Student Information
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="{{ url_for('add_student') }}" enctype="multipart/form-data">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="registration_number" class="form-label required">
+                                        <i class="fas fa-id-card"></i> Registration Number *
+                                    </label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="registration_number" 
+                                           name="registration_number" 
+                                           placeholder="e.g., BIT/0103/24"
+                                           required>
+                                    <small class="text-muted">Unique registration/student ID</small>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="first_name" class="form-label required">
+                                        <i class="fas fa-user"></i> First Name *
+                                    </label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="first_name" 
+                                           name="first_name" 
+                                           placeholder="Enter first name"
+                                           required>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="last_name" class="form-label required">
+                                        <i class="fas fa-user"></i> Last Name *
+                                    </label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="last_name" 
+                                           name="last_name" 
+                                           placeholder="Enter last name"
+                                           required>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="email" class="form-label">
+                                        <i class="fas fa-envelope"></i> Email Address
+                                    </label>
+                                    <input type="email" 
+                                           class="form-control" 
+                                           id="email" 
+                                           name="email" 
+                                           placeholder="student@example.com">
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="phone" class="form-label">
+                                        <i class="fas fa-phone"></i> Phone Number
+                                    </label>
+                                    <input type="tel" 
+                                           class="form-control" 
+                                           id="phone" 
+                                           name="phone" 
+                                           placeholder="+254 700 000 000">
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="course" class="form-label">
+                                        <i class="fas fa-book"></i> Course
+                                    </label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="course" 
+                                           name="course" 
+                                           placeholder="e.g., Computer Science">
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="department" class="form-label">
+                                        <i class="fas fa-building"></i> Department
+                                    </label>
+                                    <select class="form-select" id="department" name="department">
+                                        <option value="">Select Department</option>
+                                        <option value="Computer Science">Computer Science</option>
+                                        <option value="Information Technology">Information Technology</option>
+                                        <option value="Electrical Engineering">Electrical Engineering</option>
+                                        <option value="Mechanical Engineering">Mechanical Engineering</option>
+                                        <option value="Business Administration">Business Administration</option>
+                                        <option value="Nursing">NURSING</option>
+                                        <option value="Education">Education</option>
+                                        <option value="Law">Law</option>
+                                        <option value="Medicine">Medicine</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="year_of_study" class="form-label">
+                                        <i class="fas fa-calendar-alt"></i> Year of Study
+                                    </label>
+                                    <select class="form-select" id="year_of_study" name="year_of_study">
+                                        <option value="">Select Year</option>
+                                        <option value="1">Year 1</option>
+                                        <option value="2">Year 2</option>
+                                        <option value="3">Year 3</option>
+                                        <option value="4">Year 4</option>
+                                        <option value="5">Year 5</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="profile_image" class="form-label">
+                                    <i class="fas fa-camera"></i> Student Photo
+                                </label>
+                                <input type="file" class="form-control" id="profile_image" name="profile_image" 
+                                       accept="image/*" onchange="previewImage(this)">
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle"></i> 
+                                    Optional. Upload a clear photo of the student. Max file size: 5MB. Allowed formats: JPG, PNG, GIF
+                                </div>
+                                <div id="imagePreview" class="mt-2 d-none">
+                                    <img id="previewImg" src="#" alt="Preview" class="img-thumbnail rounded" width="150">
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-between mt-4">
+                                <a href="{{ url_for('students') }}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-arrow-left"></i> Cancel
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Add Student
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-info-circle"></i> Instructions
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <ol class="ps-3">
+                            <li class="mb-2">Fill in all required fields marked with <span class="text-danger">*</span></li>
+                            <li class="mb-2">Ensure the registration number is unique</li>
+                            <li class="mb-2">Upload a clear, front-facing photo for identification</li>
+                            <li class="mb-2">Double-check all information before submitting</li>
+                        </ol>
+                        
+                        <div class="alert alert-info mt-3">
+                            <i class="fas fa-lightbulb"></i>
+                            <strong>Tip:</strong> You can add or update the student photo later in the edit section.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function previewImage(input) {
+    const preview = document.getElementById('imagePreview');
+    const previewImg = document.getElementById('previewImg');
+    
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            previewImg.src = e.target.result;
+            preview.classList.remove('d-none');
+        }
+        reader.readAsDataURL(input.files[0]);
+    } else {
+        preview.classList.add('d-none');
+        previewImg.src = '#';
+    }
+}
+</script>
+{% endblock %}

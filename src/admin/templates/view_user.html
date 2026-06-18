@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+
+{% block title %}View User - {{ user.full_name }}{% endblock %}
+
+{% block content %}
+<!-- Add wrapper div with scrollbar styling -->
+<div class="dashboard-scroll-wrapper">
+    <div class="dashboard-container">
+        <div class="row">
+            <div class="col-12">
+                <div class="page-header">
+                    <h1><i class="fas fa-user-cog"></i> User Details</h1>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{{ url_for('user_management') }}">User Management</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">View User</li>
+                        </ol>
+                    </nav>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- User Information Card -->
+            <div class="col-md-4">
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-id-card"></i> User Information
+                        </h5>
+                        {% if current_user.role == 'superadmin' %}
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="openCameraForUser({{ user.admin_id }}, '{{ user.username }}')">
+                            <i class="fas fa-camera"></i>
+                        </button>
+                        {% endif %}
+                    </div>
+                    <div class="card-body">
+                        <div class="text-center mb-4">
+                            <div class="user-avatar-large">
+                                {% if user.profile_image %}
+                                    <img src="{{ url_for('static', filename='uploads/' + user.profile_image) }}" 
+                                         alt="{{ user.full_name }}"
+                                         style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover;">
+                                {% else %}
+                                    <img src="https://ui-avatars.com/api/?name={{ user.full_name|urlencode }}&background=007bff&color=fff&size=100" 
+                                         style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover;">
+                                {% endif %}
+                            </div>
+                            <h4 class="mt-3">{{ user.full_name }}</h4>
+                            <span class="badge {% if user.is_active %}bg-success{% else %}bg-danger{% endif %}">
+                                {{ 'Active' if user.is_active else 'Inactive' }}
+                            </span>
+                            <span class="badge {% if user.role == 'superadmin' %}bg-danger{% elif user.role == 'admin' %}bg-warning{% else %}bg-info{% endif %} ms-2">
+                                {{ user.role|upper }}
+                            </span>
+                        </div>
+                        
+                        <div class="list-group list-group-flush">
+                            <div class="list-group-item d-flex justify-content-between">
+                                <span><i class="fas fa-hashtag"></i> User ID:</span>
+                                <strong>{{ user.admin_id }}</strong>
+                            </div>
+                            <div class="list-group-item d-flex justify-content-between">
+                                <span><i class="fas fa-user"></i> Username:</span>
+                                <strong>{{ user.username }}</strong>
+                            </div>
+                            <div class="list-group-item d-flex justify-content-between">
+                                <span><i class="fas fa-envelope"></i> Email:</span>
+                                <span>{{ user.email or 'N/A' }}</span>
+                            </div>
+                            <div class="list-group-item d-flex justify-content-between">
+                                <span><i class="fas fa-calendar-plus"></i> Created:</span>
+                                <span>{{ user.created_at.strftime('%Y-%m-%d %H:%M') if user.created_at else 'N/A' }}</span>
+                            </div>
+                            <div class="list-group-item d-flex justify-content-between">
+                                <span><i class="fas fa-clock"></i> Last Login:</span>
+                                <span>{{ user.last_login.strftime('%Y-%m-%d %H:%M') if user.last_login else 'Never' }}</span>
+                            </div>
+                            <div class="list-group-item d-flex justify-content-between">
+                                <span><i class="fas fa-calendar-check"></i> Updated:</span>
+                                <span>{{ user.updated_at.strftime('%Y-%m-%d %H:%M') if user.updated_at else 'N/A' }}</span>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 mt-4">
+                            {% if current_user.role == 'superadmin' %}
+                                <a href="{{ url_for('edit_user', user_id=user.admin_id) }}" class="btn btn-warning">
+                                    <i class="fas fa-edit"></i> Edit User
+                                </a>
+                                {% if user.is_active %}
+                                    <button class="btn btn-danger" onclick="deleteUser('{{ user.admin_id }}')">
+                                        <i class="fas fa-trash"></i> Deactivate User
+                                    </button>
+                                {% else %}
+                                    <button class="btn btn-success" onclick="activateUser('{{ user.admin_id }}')">
+                                        <i class="fas fa-check-circle"></i> Activate User
+                                    </button>
+                                {% endif %}
+                                <button class="btn btn-outline-secondary" onclick="resetPassword('{{ user.admin_id }}')">
+                                    <i class="fas fa-key"></i> Reset Password
+                                </button>
+                            {% endif %}
+                            <a href="{{ url_for('user_management') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to Users
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Activity Logs Card -->
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-history"></i> Recent Activity
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        {% if activity_logs %}
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Timestamp</th>
+                                            <th>Action</th>
+                                            <th>Details</th>
+                                            <th>IP Address</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for log in activity_logs %}
+                                        <tr>
+                                            <td>{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                            <td>
+                                                <span class="badge bg-info">{{ log.action }}</span>
+                                            </td>
+                                            <td>{{ log.details or 'N/A' }}</td>
+                                            <td><code>{{ log.ip_address or 'N/A' }}</code></td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-history fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">No activity logs found for this user.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function openCameraForUser(userId, username) {
+    const url = `/camera-capture?user_id=${userId}&username=${encodeURIComponent(username)}&type=user`;
+    window.open(url, 'CapturePhoto', 'width=1024,height=768,resizable=yes,scrollbars=yes');
+}
+
+function deleteUser(userId) {
+    if (confirm('Are you sure you want to deactivate this user?')) {
+        fetch(`/users/delete/${userId}`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content,
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        });
+    }
+}
+
+function activateUser(userId) {
+    fetch(`/users/activate/${userId}`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content,
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    });
+}
+
+function resetPassword(userId) {
+    window.location.href = `/users/reset_password/${userId}`;
+}
+
+window.addEventListener('message', function(event) {
+    if (event.data && event.data.type === 'photo_saved') {
+        location.reload();
+    }
+});
+</script>
+{% endblock %}

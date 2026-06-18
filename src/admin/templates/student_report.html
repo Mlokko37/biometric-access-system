@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Student Access Report{% endblock %}
+
+{% block content %}
+
+<div class="container">
+
+    <h2>Student Access Report</h2>
+
+    <!-- Student Info -->
+    <div class="card mb-3">
+        <p><strong>Registration Number:</strong> {{ student[0] }}</p>
+        <p><strong>Name:</strong> {{ student[1] }} {{ student[2] }}</p>
+    </div>
+
+    <!-- Actions -->
+    <div class="mb-3">
+        <a href="{{ url_for('reports') }}" class="btn btn-secondary">
+            ← Back to Reports
+        </a>
+    </div>
+
+    <!-- Logs Table -->
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Date & Time</th>
+                <th>Method</th>
+                <th>Result</th>
+                <th>Match Score</th>
+                <th>Access Point</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if logs %}
+                {% for log in logs %}
+                    <tr>
+                        <td>{{ log[0] }}</td>
+                        <td>{{ log[1] }}</td>
+                        <td>
+                            {% if log[2] == 'granted' %}
+                                <span class="badge bg-success">Granted</span>
+                            {% else %}
+                                <span class="badge bg-danger">Denied</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ log[3] }}</td>
+                        <td>{{ log[4] }}</td>
+                    </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="5" class="text-center text-muted">
+                        No access records found for this student.
+                    </td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+
+</div>
+
+{% endblock %}

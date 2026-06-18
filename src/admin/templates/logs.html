@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Access Logs{% endblock %}
+
+{% block content %}
+<!-- Add wrapper div with scrollbar styling -->
+<div class="dashboard-scroll-wrapper">
+    <div class="dashboard-container">
+        <div class="page-header d-flex justify-content-between align-items-center mb-3">
+            <h4 class="mb-0">Access Logs</h4>
+            <div class="page-actions">
+                <button class="refresh-btn btn btn-secondary btn-sm" id="refresh-logs" aria-label="Refresh access logs">
+                    <i class="fas fa-sync-alt" aria-hidden="true"></i> Refresh
+                </button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body table-responsive">
+
+                <!-- Search Form -->
+                <form method="get" class="mb-3">
+                    <div class="input-group">
+                        <input type="text"
+                               name="q"
+                               class="form-control"
+                               placeholder="Search student or method"
+                               value="{{ request.args.get('q', '') }}">
+                        <button class="btn btn-primary" type="submit">Search</button>
+                    </div>
+                </form>
+
+                <!-- Logs Table -->
+                <table class="table table-sm table-striped align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col">Time</th>
+                            <th scope="col">Student</th>
+                            <th scope="col">Method</th>
+                            <th scope="col">Result</th>
+                            <th scope="col">Score</th>
+                            <th scope="col">Access Point</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logsTableBody">
+                        {% for log in logs %}
+                            <tr>
+                                <td>{{ log.timestamp }}</td>
+                                <td>{{ log.student }}</td>
+                                <td>{{ log.method }}</td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if log.result == 'granted' else 'danger' }}">
+                                        {{ log.result }}
+                                    </span>
+                                </td>
+                                <td>{{ log.score if log.score is not none else '-' }}</td>
+                                <td>{{ log.access_point }}</td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted">
+                                    No access logs found
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <!-- Pagination -->
+                {% if total_pages > 1 %}
+                <nav aria-label="Access log pages" class="mt-3">
+                    <ul class="pagination justify-content-center">
+                   
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('logs', page=page-1) }}" aria-label="Previous">&laquo;</a>
+                        </li>
+                
+                        <li class="page-item disabled" aria-disabled="true">
+                            <span class="page-link">&laquo;</span>
+                        </li>                                            
+                      
+                        <li class="page-item active" aria-current="page">
+                            <span class="page-link">{{ p }}</span>
+                        </li>
+                        
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('logs', page=p) }}">{{ p }}</a>
+                        </li>
+                       
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('logs', page=page+1) }}" aria-label="Next">&raquo;</a>
+                        </li>
+                     
+                        <li class="page-item disabled" aria-disabled="true">
+                            <span class="page-link">&raquo;</span>
+                        </li>               
+                    </ul>
+                </nav>
+                {% endif %}
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

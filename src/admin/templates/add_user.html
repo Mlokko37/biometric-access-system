@@ -1,0 +1,411 @@
+{% extends "base.html" %}
+
+{% block title %}Add New User{% endblock %}
+
+{% block content %}
+<!-- Add wrapper div with scrollbar styling -->
+<div class="dashboard-scroll-wrapper">
+    <div class="dashboard-container">
+        <div class="row">
+            <div class="col-12">
+                <div class="page-header">
+                    <h1>
+                        <i class="fas fa-user-plus text-primary"></i> 
+                        Add New User
+                    </h1>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{{ url_for('user_management') }}">User Management</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">Add New User</li>
+                        </ol>
+                    </nav>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-10 mx-auto">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-user-cog"></i> 
+                            Create New User Account
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="{{ url_for('add_user') }}" id="addUserForm" enctype="multipart/form-data">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                            <!-- Form Steps / Progress -->
+                            <div class="form-progress mb-4">
+                                <div class="row">
+                                    <div class="col-4">
+                                        <div class="step active" id="step1">
+                                            <div class="step-circle">1</div>
+                                            <div class="step-label">Account Info</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="step" id="step2">
+                                            <div class="step-circle">2</div>
+                                            <div class="step-label">Security</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="step" id="step3">
+                                            <div class="step-circle">3</div>
+                                            <div class="step-label">Profile</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Alert for errors -->
+                            <div id="formErrors" class="alert alert-danger d-none">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <span id="errorMessage"></span>
+                            </div>
+
+                            <!-- Step 1: Account Information -->
+                            <div class="step-content" id="step1Content">
+                                <h6 class="section-title">
+                                    <i class="fas fa-info-circle"></i> 
+                                    Account Information
+                                </h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <!-- Username -->
+                                        <div class="mb-3">
+                                            <label for="username" class="form-label required">
+                                                <i class="fas fa-user"></i> Username
+                                            </label>
+                                            <div class="input-group">
+                                                <span class="input-group-text">
+                                                    <i class="fas fa-at"></i>
+                                                </span>
+                                                <input type="text" 
+                                                       class="form-control" 
+                                                       id="username" 
+                                                       name="username" 
+                                                       required 
+                                                       minlength="3"
+                                                       maxlength="50"
+                                                       pattern="[a-zA-Z0-9_]+"
+                                                       placeholder="johndoe"
+                                                       title="Username must be 3-50 characters and can contain letters, numbers, and underscore">
+                                            </div>
+                                            <div class="form-text">
+                                                <i class="fas fa-info-circle"></i> 
+                                                3-50 characters, letters, numbers, and underscore only
+                                            </div>
+                                            <div class="invalid-feedback">Please enter a valid username</div>
+                                        </div>
+
+                                        <!-- Full Name -->
+                                        <div class="mb-3">
+                                            <label for="full_name" class="form-label required">
+                                                <i class="fas fa-id-card"></i> Full Name
+                                            </label>
+                                            <input type="text" 
+                                                   class="form-control" 
+                                                   id="full_name" 
+                                                   name="full_name" 
+                                                   required 
+                                                   minlength="2"
+                                                   maxlength="100"
+                                                   placeholder="John Doe">
+                                            <div class="invalid-feedback">Please enter a full name</div>
+                                        </div>
+
+                                        <!-- Email -->
+                                        <div class="mb-3">
+                                            <label for="email" class="form-label">
+                                                <i class="fas fa-envelope"></i> Email Address
+                                            </label>
+                                            <input type="email" 
+                                                   class="form-control" 
+                                                   id="email" 
+                                                   name="email" 
+                                                   placeholder="john.doe@example.com">
+                                            <div class="invalid-feedback">Please enter a valid email address</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <!-- Phone -->
+                                        <div class="mb-3">
+                                            <label for="phone" class="form-label">
+                                                <i class="fas fa-phone"></i> Phone Number
+                                            </label>
+                                            <input type="tel" 
+                                                   class="form-control" 
+                                                   id="phone" 
+                                                   name="phone" 
+                                                   placeholder="+254 700 000 000">
+                                        </div>
+
+                                        <!-- Department -->
+                                        <div class="mb-3">
+                                            <label for="department" class="form-label">
+                                                <i class="fas fa-building"></i> Department
+                                            </label>
+                                            <select class="form-select" id="department" name="department">
+                                                <option value="">Select department...</option>
+                                                <option value="IT">Information Technology</option>
+                                                <option value="HR">Human Resources</option>
+                                                <option value="Finance">Finance</option>
+                                                <option value="Administration">Administration</option>
+                                                <option value="Security">Security</option>
+                                                <option value="Academic">Academic Affairs</option>
+                                                <option value="Student Affairs">Student Affairs</option>
+                                            </select>
+                                        </div>
+
+                                        <!-- Role Selection -->
+                                        <div class="mb-3">
+                                            <label for="role" class="form-label required">
+                                                <i class="fas fa-shield-alt"></i> User Role
+                                            </label>
+                                            <select class="form-select" id="role" name="role" required>
+                                                <option value="">Select role...</option>
+                                                <option value="staff">Staff</option>
+                                                <option value="admin">Admin</option>
+                                                <option value="superadmin">Super Admin</option>
+                                            </select>
+                                            <div class="form-text">
+                                                <span class="badge bg-info">Staff</span> - Basic access |
+                                                <span class="badge bg-warning">Admin</span> - Management access |
+                                                <span class="badge bg-danger">Super Admin</span> - Full system access
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Step 2: Security -->
+                            <div class="step-content d-none" id="step2Content">
+                                <h6 class="section-title">
+                                    <i class="fas fa-lock"></i> 
+                                    Security Settings
+                                </h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <!-- Password -->
+                                        <div class="mb-3">
+                                            <label for="password" class="form-label required">
+                                                <i class="fas fa-key"></i> Password
+                                            </label>
+                                            <div class="input-group">
+                                                <span class="input-group-text">
+                                                    <i class="fas fa-lock"></i>
+                                                </span>
+                                                <input type="password" 
+                                                       class="form-control" 
+                                                       id="password" 
+                                                       name="password" 
+                                                       required 
+                                                       minlength="8"
+                                                       placeholder="Enter password">
+                                                <button class="btn btn-outline-secondary toggle-password" 
+                                                        type="button"
+                                                        title="Toggle password visibility">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                            </div>
+                                            
+                                            <!-- Password Strength Meter -->
+                                            <div class="password-strength mt-2">
+                                                <div class="progress password-progress">
+                                                    <div class="progress-bar" id="passwordStrength" role="progressbar" aria-label="Password strength" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
+                                                </div>
+                                                <small class="text-muted" id="passwordStrengthText">
+                                                    <i class="fas fa-info-circle"></i>
+                                                    Enter a password
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <!-- Confirm Password -->
+                                        <div class="mb-3">
+                                            <label for="confirm_password" class="form-label required">
+                                                <i class="fas fa-check-circle"></i> Confirm Password
+                                            </label>
+                                            <div class="input-group">
+                                                <span class="input-group-text">
+                                                    <i class="fas fa-lock"></i>
+                                                </span>
+                                                <input type="password" 
+                                                       class="form-control" 
+                                                       id="confirm_password" 
+                                                       name="confirm_password" 
+                                                       required 
+                                                       placeholder="Confirm password">
+                                                <button class="btn btn-outline-secondary toggle-password" 
+                                                        type="button"
+                                                        title="Toggle password visibility">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                            </div>
+                                            <div class="invalid-feedback" id="passwordMatchError">
+                                                Passwords do not match
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Password Requirements Checklist -->
+                                <div class="alert alert-info">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="fas fa-clipboard-list me-2"></i>
+                                        <strong>Password Requirements:</strong>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <small id="req-length" class="text-danger d-block mb-1">
+                                                <i class="fas fa-times-circle"></i> At least 8 characters
+                                            </small>
+                                            <small id="req-uppercase" class="text-danger d-block mb-1">
+                                                <i class="fas fa-times-circle"></i> One uppercase letter
+                                            </small>
+                                            <small id="req-lowercase" class="text-danger d-block mb-1">
+                                                <i class="fas fa-times-circle"></i> One lowercase letter
+                                            </small>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <small id="req-number" class="text-danger d-block mb-1">
+                                                <i class="fas fa-times-circle"></i> One number
+                                            </small>
+                                            <small id="req-special" class="text-danger d-block mb-1">
+                                                <i class="fas fa-times-circle"></i> One special character
+                                            </small>
+                                            <small id="req-match" class="text-danger d-block mb-1">
+                                                <i class="fas fa-times-circle"></i> Passwords match
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Account Status -->
+                                <div class="form-check form-switch mt-3">
+                                    <input class="form-check-input" type="checkbox" id="is_active" name="is_active" checked>
+                                    <label class="form-check-label" for="is_active">
+                                        <i class="fas fa-toggle-on text-success"></i> 
+                                        Active Account
+                                    </label>
+                                    <div class="form-text">
+                                        <i class="fas fa-info-circle"></i> 
+                                        Active users can login immediately
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Step 3: Profile -->
+                            <div class="step-content d-none" id="step3Content">
+                                <h6 class="section-title">
+                                    <i class="fas fa-image"></i> 
+                                    Profile Information
+                                </h6>
+                                
+                                <!-- Profile Image Upload -->
+                                <div class="row">
+                                    <div class="col-12">
+                                        <div class="mb-4">
+                                            <label class="form-label">
+                                                <i class="fas fa-camera"></i> Profile Image (Optional)
+                                            </label>
+                                            <div class="d-flex align-items-center">
+                                                <div class="me-4">
+                                                    <div id="imagePreview" class="profile-image-preview">
+                                                        <i class="fas fa-camera fa-3x text-muted"></i>
+                                                    </div>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <div class="mb-2">
+                                                        <label for="profile_image" class="btn btn-outline-primary">
+                                                            <i class="fas fa-upload"></i> Choose Image
+                                                        </label>
+                                                        <input type="file" 
+                                                               class="d-none" 
+                                                               id="profile_image" 
+                                                               name="profile_image" 
+                                                               accept="image/jpeg,image/png,image/gif">
+                                                        <button type="button" class="btn btn-outline-danger d-none" id="removeImage">
+                                                            <i class="fas fa-times"></i> Remove
+                                                        </button>
+                                                    </div>
+                                                    <small class="text-muted d-block">
+                                                        <i class="fas fa-info-circle"></i> 
+                                                        Accepted formats: JPG, PNG, GIF (Max size: 2MB)
+                                                    </small>
+                                                    <div id="fileName" class="small text-success mt-1"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Navigation Buttons -->
+                            <div class="d-flex justify-content-between mt-4">
+                                <div>
+                                    <button type="button" class="btn btn-outline-secondary d-none" id="prevBtn">
+                                        <i class="fas fa-arrow-left"></i> Previous
+                                    </button>
+                                </div>
+                                <div>
+                                    <button type="button" class="btn btn-primary" id="nextBtn">
+                                        Next <i class="fas fa-arrow-right"></i>
+                                    </button>
+                                    <button type="submit" class="btn btn-success d-none" id="submitBtn">
+                                        <i class="fas fa-check-circle"></i> Create User
+                                    </button>
+                                    <a href="{{ url_for('user_management') }}" class="btn btn-outline-secondary ms-2">
+                                        <i class="fas fa-times"></i> Cancel
+                                    </a>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Quick Tips Card -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-lightbulb text-warning"></i> 
+                            Quick Tips
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-start mb-3">
+                                    <i class="fas fa-check-circle text-success mt-1 me-2"></i>
+                                    <span>Use a strong password with mix of characters</span>
+                                </div>
+                                <div class="d-flex align-items-start mb-3">
+                                    <i class="fas fa-check-circle text-success mt-1 me-2"></i>
+                                    <span>Assign appropriate role based on user responsibilities</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-start mb-3">
+                                    <i class="fas fa-check-circle text-success mt-1 me-2"></i>
+                                    <span>Use official email addresses when possible</span>
+                                </div>
+                                <div class="d-flex align-items-start mb-3">
+                                    <i class="fas fa-check-circle text-success mt-1 me-2"></i>
+                                    <span>Profile image should be clear and professional</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

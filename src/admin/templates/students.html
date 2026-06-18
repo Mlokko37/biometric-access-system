@@ -1,0 +1,477 @@
+{% extends "base.html" %}
+
+{% block title %}Students Management{% endblock %}
+
+{% block content %}
+
+<!-- Add wrapper div with scrollbar styling - same as dashboard -->
+<div class="dashboard-scroll-wrapper">
+    <div class="dashboard-container">
+        <!-- Page Header -->
+        <div class="row">
+            <div class="col-12">
+                <div class="page-header">
+                    <h1 class="page-title">
+                        <i class="fas fa-user-graduate"></i> Students Management
+                    </h1>
+                    <div class="page-actions">
+                        <span class="last-update">Last updated: <span id="last-updated-time">{{ now().strftime('%Y-%m-%d %H:%M:%S') }}</span></span>
+                        <button class="refresh-btn" id="refresh-students">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Student Actions -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-users"></i> Registered Students
+                            </h5>
+                            <div>
+                                <a href="{{ url_for('add_student') }}" class="btn btn-primary" id="addStudentBtn" title="Add New Student">
+                                    <i class="fas fa-user-plus"></i>
+                                    <span>Add New Student</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search and Filters -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="input-group">
+                    <span class="input-group-text">
+                        <i class="fas fa-search"></i>
+                    </span>
+                    <input type="text" class="form-control" id="studentSearch" placeholder="Search by name or registration number...">
+                    <button class="btn btn-outline-secondary hidden-button" type="button" id="clearSearch">
+                        <i class="fas fa-times"></i> Clear
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-8">
+                <div class="d-flex justify-content-end gap-2">
+                    <select class="form-select w-auto" id="courseFilter" title="Filter by course">
+                        <option value="all">All Courses</option>
+                        <option value="COMPUTER SCIENCE">COMPUTER SCIENCE</option>
+                        <option value="BSc. Information Technology">BSc. Information Technology</option>                        
+                        <option value="ELECTRICAL ENGINEERING">ELECTRICAL ENGINEERING</option>
+                        <option value="MECHANICAL ENGINEERING">MECHANICAL ENGINEERING</option>
+                        <option value="BUSINESS ADMINISTRATION">BUSINESS ADMINISTRATION</option>
+                        <option value="NURSING">NURSING</option>
+                        <option value="EDUCATION">EDUCATION</option>
+                        <option value="LAW">LAW</option>
+                        <option value="MEDICINE">MEDICINE</option>
+                    </select>
+                    <select class="form-select w-auto" id="yearFilter" title="Filter by year">
+                        <option value="all">All Years</option>
+                        <option value="1">Year 1</option>
+                        <option value="2">Year 2</option>
+                        <option value="3">Year 3</option>
+                        <option value="4">Year 4</option>
+                    </select>
+                    <select class="form-select w-auto" id="statusFilter" title="Filter status">
+                        <option value="all">All Status</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
+                    <select class="form-select w-auto" id="perPageSelect" title="Items per page">
+                        <option value="10" {% if per_page == 10 %}selected{% endif %}>10 per page</option>
+                        <option value="25" {% if per_page == 25 %}selected{% endif %}>25 per page</option>
+                        <option value="50" {% if per_page == 50 %}selected{% endif %}>50 per page</option>
+                        <option value="100" {% if per_page == 100 %}selected{% endif %}>100 per page</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Students Table -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="studentsTable">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Reg No.</th>
+                                        <th>Full Name</th>
+                                        <th>Email</th>
+                                        <th>Course</th>
+                                        <th>Year</th>
+                                        <th>Status</th>
+                                        <th>Registered</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="studentsTableBody">
+                                    {% for student in students %}
+                                    <tr data-student-id="{{ student.student_id }}">
+                                        <td><strong>{{ student.registration_number }}</strong></strong></td>
+                                        <td>{{ student.first_name }} {{ student.last_name }}</td>
+                                        <td>{{ student.email or 'N/A' }}</td>
+                                        <td><span class="badge bg-info">{{ student.course or 'N/A' }}</span></td>
+                                        <td><span class="badge bg-secondary">Year {{ student.year_of_study or 'N/A' }}</span></td>
+                                        <td><span class="badge bg-success">Active</span></td>
+                                        <td>{{ student.created_at.strftime('%Y-%m-%d') if student.created_at else 'N/A' }}</td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{{ url_for('view_student', student_id=student.student_id) }}" 
+                                                    class="btn btn-outline-info" title="View Student">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a href="{{ url_for('edit_student', student_id=student.student_id) }}" 
+                                                    class="btn btn-outline-primary" title="Edit Student">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <button class="btn btn-outline-danger delete-btn" 
+                                                        data-student-id="{{ student.student_id }}" 
+                                                        data-student-name="{{ student.first_name }} {{ student.last_name }}"
+                                                        title="Delete Student">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- PAGINATION SECTION -->
+                    <div class="card-footer">
+                        <div class="row align-items-center">
+                            <div class="col-md-4">
+                                <small class="text-muted">
+                                    <i class="fas fa-users"></i>
+                                    Showing {{ ((page - 1) * per_page) + 1 }} to 
+                                    {% set end_count = page * per_page %}
+                                    {% if end_count > total_count %}
+                                        {{ total_count }}
+                                    {% else %}
+                                        {{ end_count }}
+                                    {% endif %}
+                                    of {{ total_count }} students
+                                </small>
+                            </div>
+                            <div class="col-md-8">
+                                <nav aria-label="Student pagination">
+                                    {% set start_page = [1, page - 2]|max %}
+                                    {% set end_page = [total_pages, page + 2]|min %}
+                                    <ul class="pagination justify-content-end mb-0">
+                                        <li class="page-item {% if page == 1 %}disabled{% endif %}">
+                                            <a class="page-link" href="{{ url_for('students', page=page-1, per_page=per_page, q=search_query) if page > 1 else '#' }}">
+                                                <i class="fas fa-chevron-left"></i> Previous
+                                            </a>
+                                        </li>
+                                        {%- if start_page > 1 -%}
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ url_for('students', page=1, per_page=per_page, q=search_query) }}">1</a>
+                                        </li>
+                                        {%- if start_page > 2 -%}
+                                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                                        {%- endif -%}
+                                        {%- endif -%}
+                                        {%- for p in range(start_page, end_page + 1) -%}
+                                        <li class="page-item {% if p == page %}active{% endif %}">
+                                            <a class="page-link" href="{{ url_for('students', page=p, per_page=per_page, q=search_query) }}">{{ p }}</a>
+                                        </li>
+                                        {%- endfor -%}
+                                        {%- if end_page < total_pages -%}
+                                        {%- if end_page < total_pages - 1 -%}
+                                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                                        {%- endif -%}
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ url_for('students', page=total_pages, per_page=per_page, q=search_query) }}">{{ total_pages }}</a>
+                                        </li>
+                                        {%- endif -%}
+                                        <li class="page-item {% if page == total_pages %}disabled{% endif %}">
+                                            <a class="page-link" href="{{ url_for('students', page=page+1, per_page=per_page, q=search_query) if page < total_pages else '#' }}">
+                                                Next <i class="fas fa-chevron-right"></i>
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle"></i> Confirm Deletion
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" title="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete <strong id="deleteStudentName"></strong>?</p>
+                <div class="alert alert-danger mb-0">
+                    <i class="fas fa-exclamation-circle"></i> This action cannot be undone.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Helper function to get CSRF token
+function getCsrfToken() {
+    // Try to get from meta tag first
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    if (meta) {
+        return meta.content;
+    }
+    // Fallback: try to get from cookie
+    const cookie = document.cookie.split('; ').find(row => row.startsWith('csrf_token='));
+    return cookie ? cookie.split('=')[1] : '';
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Get filter elements
+    const courseFilter = document.getElementById('courseFilter');
+    const yearFilter = document.getElementById('yearFilter');
+    const statusFilter = document.getElementById('statusFilter');
+    const refreshBtn = document.getElementById('refresh-students');
+    const searchInput = document.getElementById('studentSearch');
+    const clearBtn = document.getElementById('clearSearch');
+    const perPageSelect = document.getElementById('perPageSelect');
+    
+    // Per page change handler
+    if (perPageSelect) {
+        perPageSelect.addEventListener('change', function() {
+            const url = new URL(window.location.href);
+            url.searchParams.set('per_page', this.value);
+            url.searchParams.set('page', 1);
+            window.location.href = url.toString();
+        });
+    }
+    
+    // Filter function for client-side filtering
+    function filterStudents() {
+        const courseValue = courseFilter.value;
+        const yearValue = yearFilter.value;
+        const statusValue = statusFilter.value;
+        const searchTerm = searchInput.value.toLowerCase().trim();
+        
+        const tbody = document.getElementById('studentsTableBody');
+        const rows = tbody.getElementsByTagName('tr');
+        
+        let visibleCount = 0;
+        
+        for (let row of rows) {
+            const regNo = row.cells[0]?.textContent.toLowerCase() || '';
+            const fullName = row.cells[1]?.textContent.toLowerCase() || '';
+            const email = row.cells[2]?.textContent.toLowerCase() || '';
+            
+            const courseCell = row.cells[3];
+            const courseBadge = courseCell ? courseCell.querySelector('.badge') : null;
+            const courseText = courseBadge ? courseBadge.textContent.trim() : '';
+            
+            const yearCell = row.cells[4];
+            const yearBadge = yearCell ? yearCell.querySelector('.badge') : null;
+            const yearText = yearBadge ? yearBadge.textContent.trim().replace('Year ', '') : '';
+            
+            const statusCell = row.cells[5];
+            const statusBadge = statusCell ? statusCell.querySelector('.badge') : null;
+            const statusText = statusBadge ? statusBadge.textContent.trim().toLowerCase() : '';
+            
+            let searchMatch = searchTerm === '' || regNo.includes(searchTerm) || fullName.includes(searchTerm) || email.includes(searchTerm);
+            let courseMatch = courseValue === 'all' || courseText === courseValue;
+            let yearMatch = yearValue === 'all' || yearText === yearValue;
+            let statusMatch = statusValue === 'all' || (statusValue === 'active' && statusText.includes('active')) || (statusValue === 'inactive' && statusText.includes('inactive'));
+            
+            if (searchMatch && courseMatch && yearMatch && statusMatch) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        }
+        
+        // Update visible count
+        const visibleSpan = document.getElementById('visibleCount');
+        if (visibleSpan) {
+            visibleSpan.textContent = visibleCount;
+        }
+    }
+    
+    // Refresh button - shows spinner and reloads
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', function() {
+            const originalHtml = this.innerHTML;
+            this.disabled = true;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
+            
+            setTimeout(() => {
+                window.location.reload();
+            }, 300);
+        });
+    }
+    
+    // Clear search
+    if (clearBtn) {
+        clearBtn.addEventListener('click', function() {
+            searchInput.value = '';
+            this.classList.add('hidden-button');
+            filterStudents();
+            searchInput.focus();
+        });
+    }
+    
+    // Live search
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            if (clearBtn) {
+                if (this.value.length > 0) {
+                    clearBtn.classList.remove('hidden-button');
+                } else {
+                    clearBtn.classList.add('hidden-button');
+                }
+            }
+            filterStudents();
+        });
+    }
+    
+    // Filter change events
+    if (courseFilter) courseFilter.addEventListener('change', filterStudents);
+    if (yearFilter) yearFilter.addEventListener('change', filterStudents);
+    if (statusFilter) statusFilter.addEventListener('change', filterStudents);
+    
+    // Delete button functionality with CSRF token
+    const deleteButtons = document.querySelectorAll('.delete-btn');
+    let currentDeleteId = null;
+    
+    deleteButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            currentDeleteId = this.dataset.studentId;
+            const studentName = this.dataset.studentName;
+            document.getElementById('deleteStudentName').textContent = studentName;
+            new bootstrap.Modal(document.getElementById('deleteConfirmModal')).show();
+        });
+    });
+    
+    // Confirm delete with CSRF token
+    document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+        if (!currentDeleteId) return;
+        
+        const deleteBtn = this;
+        const originalHtml = deleteBtn.innerHTML;
+        deleteBtn.disabled = true;
+        deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
+        
+        const csrfToken = getCsrfToken();
+        
+        fetch(`/students/delete/${currentDeleteId}`, {
+            method: 'DELETE',
+            headers: { 
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': csrfToken
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal')).hide();
+                // Remove the row from the table instead of reloading
+                const row = document.querySelector(`tr[data-student-id="${currentDeleteId}"]`);
+                if (row) {
+                    row.remove();
+                }
+                // Update the count
+                const totalCountElement = document.querySelector('.text-muted');
+                if (totalCountElement) {
+                    const currentCount = parseInt(totalCountElement.textContent.match(/\d+/g)?.pop() || '0');
+                    if (currentCount > 0) {
+                        totalCountElement.textContent = totalCountElement.textContent.replace(/\d+$/, currentCount - 1);
+                    }
+                }
+                // Show success message
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed top-0 end-0 m-3';
+                alertDiv.style.zIndex = '9999';
+                alertDiv.innerHTML = `
+                    <i class="fas fa-check-circle"></i> Student deleted successfully!
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                document.body.appendChild(alertDiv);
+                setTimeout(() => alertDiv.remove(), 3000);
+            } else {
+                alert('Error: ' + (data.error || 'Delete failed'));
+                deleteBtn.disabled = false;
+                deleteBtn.innerHTML = originalHtml;
+            }
+        })
+        .catch(error => {
+            console.error('Delete error:', error);
+            alert('Network error: ' + error.message);
+            deleteBtn.disabled = false;
+            deleteBtn.innerHTML = originalHtml;
+        });
+    });
+});
+</script>
+
+<style>
+/* Additional styles for students page */
+.filter-group select {
+    min-width: 150px;
+}
+.hidden-button {
+    display: none;
+}
+.pagination {
+    margin-bottom: 0;
+}
+.page-item.active .page-link {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+.refresh-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+/* Action buttons hover effects */
+.btn-group .btn {
+    transition: all 0.2s ease;
+}
+.btn-group .btn:hover {
+    transform: translateY(-1px);
+}
+/* Success toast animation */
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+.alert-success {
+    animation: slideIn 0.3s ease-out;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Add wrapper div with scrollbar styling -->
+<div class="dashboard-scroll-wrapper">
+    <div class="dashboard-container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Audit Logs</h1>
+            <div>
+                <!-- Use BiometricApp namespace -->
+                <button class="btn btn-outline-secondary" onclick="BiometricApp.exportAuditLogs()">
+                    <i class="fas fa-download"></i> Export
+                </button>
+                <button class="btn btn-outline-danger" onclick="BiometricApp.clearOldLogs()">
+                    <i class="fas fa-trash"></i> Clear Old Logs
+                </button>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <form id="auditFilterForm" method="GET" class="row g-3">
+                    <div class="col-md-3">
+                        <label for="date_from" class="form-label">Date From</label>
+                        <input type="date" class="form-control" id="date_from" name="date_from">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="date_to" class="form-label">Date To</label>
+                        <input type="date" class="form-control" id="date_to" name="date_to">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="action_type" class="form-label">Action Type</label>
+                        <select class="form-control" id="action_type" name="action_type">
+                            <option value="">All Actions</option>
+                            <option value="login">Login</option>
+                            <option value="logout">Logout</option>
+                            <option value="student_added">Student Added</option>
+                            <option value="student_updated">Student Updated</option>
+                            <option value="access_granted">Access Granted</option>
+                            <option value="access_denied">Access Denied</option>
+                            <option value="device_added">Device Added</option>
+                            <option value="settings_updated">Settings Updated</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="user_id" class="form-label">User</label>
+                        <select class="form-control" id="user_id" name="user_id">
+                            <option value="">All Users</option>
+                            {% for user in users %}
+                            <option value="{{ user.id }}">{{ user.username }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-filter"></i> Apply Filters
+                        </button>
+                        <!-- ✅ Reset button uses BiometricApp.resetFilters -->
+                        <button type="button" class="btn btn-secondary" onclick="BiometricApp.resetFilters()">
+                            <i class="fas fa-redo"></i> Reset
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Audit Logs Table -->
+        <div class="card">
+            <div class="card-body">
+                {% if logs %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>User</th>
+                                <th>Action</th>
+                                <th>Description</th>
+                                <th>IP Address</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in logs %}
+                            <tr>
+                                <td>{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                <td>{{ log.username }}</td>
+                                <td>
+                                    <span class="badge bg-{{ 'info' if log.action_type == 'login' else 'warning' if log.action_type == 'logout' else 'success' if 'added' in log.action_type else 'primary' if 'updated' in log.action_type else 'secondary' }}">
+                                        {{ log.action_type|replace('_', ' ')|title }}
+                                    </span>
+                                </td>
+                                <td>{{ log.description }}</td>
+                                <td>{{ log.ip_address }}</td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if log.status == 'success' else 'danger' }}">
+                                        {{ log.status|title }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if total_pages > 1 %}
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center">
+                        {% if page > 1 %}
+                        <li class="page-item"><a class="page-link" href="?page={{ page-1 }}{% for key, value in request.args.items() if key != 'page' %}&{{ key }}={{ value }}{% endfor %}">Previous</a></li>
+                        {% else %}
+                        <li class="page-item disabled" aria-disabled="true"><span class="page-link">Previous</span></li>
+                        {% endif %}
+
+                        {% for p in range(1, total_pages + 1) %}
+                            {% if p == page %}
+                            <li class="page-item active" aria-current="page"><span class="page-link">{{ p }}</span></li>
+                            {% else %}
+                            <li class="page-item"><a class="page-link" href="?page={{ p }}{% for key, value in request.args.items() if key != 'page' %}&{{ key }}={{ value }}{% endfor %}">{{ p }}</a></li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page < total_pages %}
+                        <li class="page-item"><a class="page-link" href="?page={{ page+1 }}{% for key, value in request.args.items() if key != 'page' %}&{{ key }}={{ value }}{% endfor %}">Next</a></li>
+                        {% else %}
+                        <li class="page-item disabled" aria-disabled="true"><span class="page-link">Next</span></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+                          
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">No audit logs found.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Optional: Add a small inline script to handle namespace fallback -->
+<script>
+// Ensure BiometricApp exists (if main.js is loaded, it will already be defined)
+if (typeof BiometricApp === 'undefined') {
+    window.BiometricApp = {
+        exportAuditLogs: function() {
+            alert('Export functionality not yet available. Please make sure main.js is loaded.');
+        },
+        clearOldLogs: function() {
+            alert('Clear logs functionality not yet available. Please make sure main.js is loaded.');
+        },
+        resetFilters: function() {
+            var form = document.getElementById('auditFilterForm');
+            if (form) {
+                form.reset();
+                // Clear all input and select values
+                var inputs = form.querySelectorAll('input, select');
+                inputs.forEach(function(el) {
+                    if (el.type !== 'submit' && el.type !== 'button') {
+                        el.value = '';
+                    }
+                });
+                form.submit();
+            }
+        }
+    };
+}
+</script>
+{% endblock %}

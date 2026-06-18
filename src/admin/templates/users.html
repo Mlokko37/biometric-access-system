@@ -1,0 +1,504 @@
+{% extends "base.html" %}
+
+{% block title %}User Management{% endblock %}
+
+{% block content %}
+
+<!-- Add wrapper div with scrollbar styling - same as dashboard -->
+<div class="dashboard-scroll-wrapper">
+    <div class="dashboard-container">
+        <!-- Page Header -->
+        <div class="row">
+            <div class="col-12">
+                <div class="page-header">
+                    <h1 class="page-title">
+                        <i class="fas fa-users-cog"></i> User Management
+                    </h1>
+                    <div class="page-actions">
+                        <span class="last-update">Last updated: <span id="last-updated-time">{{ now().strftime('%Y-%m-%d %H:%M:%S') }}</span></span>
+                        <button class="refresh-btn" id="refresh-users">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- User Actions Card -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-users"></i> System Users
+                            </h5>
+                            <div>
+                                <a href="{{ url_for('add_user') }}" class="btn btn-primary" id="addUserBtn" title="Add New User">
+                                    <i class="fas fa-user-plus"></i>
+                                    <span>Add New User</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search and Filters Section -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <span class="input-group-text">
+                        <i class="fas fa-search"></i>
+                    </span>
+                    <input type="text" class="form-control" id="userSearch" placeholder="Search by username, full name, or email...">
+                    <button class="btn btn-outline-secondary" type="button" id="clearSearchBtn" title="Clear search">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="d-flex justify-content-end gap-2">
+                    <select class="form-select w-auto" id="roleFilter" title="Filter users by role">
+                        <option value="all">All Roles</option>
+                        <option value="superadmin">Super Admin</option>
+                        <option value="admin">Admin</option>
+                        <option value="staff">Staff</option>
+                    </select>
+                    <select class="form-select w-auto" id="statusFilter" title="Filter users by status">
+                        <option value="all">All Status</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Users Table Card -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="usersTable">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Username</th>
+                                        <th>Full Name</th>
+                                        <th>Email</th>
+                                        <th>Role</th>
+                                        <th>Status</th>
+                                        <th>Created</th>
+                                        <th>Last Login</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="usersTableBody">
+                                    {% if users %}
+                                        {% for u in users %}
+                                        <tr>
+                                            <td data-username="{{ u['username'] }}">
+                                                <i class="fas fa-user-circle me-2"></i>
+                                                <strong>{{ u['username'] }}</strong>
+                                            </strong></td>
+                                            <td data-fullname="{{ u['full_name'] }}">{{ u['full_name'] or 'N/A' }}</strong></td>
+                                            <td data-email="{{ u['email'] }}">{{ u['email'] or 'N/A' }}</strong></td>
+                                            <td class="user-role" data-role="{{ u['role'] }}">
+                                                <span class="badge 
+                                                    {% if u['role'] == 'superadmin' %}bg-danger
+                                                    {% elif u['role'] == 'admin' %}bg-warning text-dark
+                                                    {% else %}bg-info{% endif %}">
+                                                    {{ u['role']|upper }}
+                                                </span>
+                                            </strong>
+                                            <td class="user-status" data-status="{% if u['is_active'] %}active{% else %}inactive{% endif %}">
+                                                <span class="badge {% if u['is_active'] %}bg-success{% else %}bg-secondary{% endif %}">
+                                                    <i class="fas fa-{% if u['is_active'] %}check-circle{% else %}times-circle{% endif %} me-1"></i>
+                                                    {{ 'Active' if u['is_active'] else 'Inactive' }}
+                                                </span>
+                                            </strong>
+                                            <td>{{ u['created_at'].strftime('%Y-%m-%d') if u['created_at'] else 'N/A' }}</strong>
+                                            <td>
+                                                {% if u['last_login'] %}
+                                                    <span title="{{ u['last_login'].strftime('%Y-%m-%d %H:%M') }}">
+                                                        {{ u['last_login'].strftime('%Y-%m-%d') }}
+                                                    </span>
+                                                {% else %}
+                                                    <span class="text-muted">Never</span>
+                                                {% endif %}
+                                            </strong>
+                                            <td>
+                                                <div class="btn-group btn-group-sm">
+                                                    <a href="{{ url_for('view_user', user_id=u['admin_id']) }}" 
+                                                       class="btn btn-outline-info" title="View User Details">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                    <!-- DELETE BUTTON - Now always visible, but disabled for own account -->
+                                                    <button class="btn btn-outline-danger delete-btn" 
+                                                            data-user-id="{{ u['admin_id'] }}" 
+                                                            data-username="{{ u['username'] }}"
+                                                            {% if current_user.admin_id == u['admin_id'] %}
+                                                            disabled
+                                                            title="You cannot delete your own account"
+                                                            {% else %}
+                                                            title="Delete User"
+                                                            {% endif %}>
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </strong>
+                                        </tr>
+                                        {% endfor %}
+                                    {% else %}
+                                        <tr>
+                                            <td colspan="8" class="text-center py-4">
+                                                <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                                                <p class="text-muted">No users found</p>
+                                                <a href="{{ url_for('add_user') }}" class="btn btn-primary btn-sm">
+                                                    <i class="fas fa-user-plus"></i> Add Your First User
+                                                </a>
+                                            </strong>
+                                        </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Table Footer -->
+                    {% if users %}
+                    <div class="card-footer">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <small class="text-muted">
+                                    <i class="fas fa-users"></i>
+                                    Showing <span id="visibleCount">{{ users|length }}</span> of <span id="totalCount">{{ users|length }}</span> users
+                                </small>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <small class="text-muted">
+                                    <i class="fas fa-clock"></i> 
+                                    Last updated: {{ now().strftime('%Y-%m-%d %H:%M:%S') }}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle"></i> Confirm Deletion
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" title="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete user <strong id="deleteUsername"></strong>?</p>
+                <div class="alert alert-danger mb-0">
+                    <i class="fas fa-exclamation-circle"></i> This action cannot be undone. The user will be deactivated.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Helper function to get CSRF token
+function getCsrfToken() {
+    // Try to get from meta tag first
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    if (meta) {
+        return meta.content;
+    }
+    // Fallback: try to get from cookie
+    const cookie = document.cookie.split('; ').find(row => row.startsWith('csrf_token='));
+    return cookie ? cookie.split('=')[1] : '';
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Get filter elements
+    const searchInput = document.getElementById('userSearch');
+    const roleFilter = document.getElementById('roleFilter');
+    const statusFilter = document.getElementById('statusFilter');
+    const refreshBtn = document.getElementById('refresh-users');
+    const clearBtn = document.getElementById('clearSearchBtn');
+    
+    // Initially hide clear button if search is empty
+    if (clearBtn && searchInput && searchInput.value === '') {
+        clearBtn.style.display = 'none';
+    }
+    
+    // Function to filter users
+    function filterUsers() {
+        const searchTerm = searchInput.value.toLowerCase().trim();
+        const roleValue = roleFilter.value;
+        const statusValue = statusFilter.value;
+        
+        const tbody = document.getElementById('usersTableBody');
+        const rows = tbody.getElementsByTagName('tr');
+        
+        let visibleCount = 0;
+        
+        for (let row of rows) {
+            // Skip if it's the "no users" row
+            if (row.cells.length === 1) continue;
+            
+            const username = row.cells[0]?.textContent.toLowerCase() || '';
+            const fullName = row.cells[1]?.textContent.toLowerCase() || '';
+            const email = row.cells[2]?.textContent.toLowerCase() || '';
+            
+            const roleCell = row.cells[3];
+            const roleBadge = roleCell ? roleCell.querySelector('.badge') : null;
+            const roleText = roleBadge ? roleBadge.textContent.trim().toLowerCase() : '';
+            
+            const statusCell = row.cells[4];
+            const statusBadge = statusCell ? statusCell.querySelector('.badge') : null;
+            const statusText = statusBadge ? statusBadge.textContent.trim().toLowerCase() : '';
+            
+            let searchMatch = searchTerm === '' || username.includes(searchTerm) || fullName.includes(searchTerm) || email.includes(searchTerm);
+            let roleMatch = roleValue === 'all' || roleText === roleValue;
+            let statusMatch = statusValue === 'all' || (statusValue === 'active' && statusText.includes('active')) || (statusValue === 'inactive' && statusText.includes('inactive'));
+            
+            if (searchMatch && roleMatch && statusMatch) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        }
+        
+        // Update visible count
+        const visibleSpan = document.getElementById('visibleCount');
+        if (visibleSpan) visibleSpan.textContent = visibleCount;
+        
+        // Show "no results" message if needed
+        const noResultsRow = tbody.querySelector('.no-results-row');
+        if (visibleCount === 0 && rows.length > 0 && !rows[0].classList.contains('no-results-row')) {
+            if (!noResultsRow) {
+                const noResults = document.createElement('tr');
+                noResults.className = 'no-results-row';
+                noResults.innerHTML = '<td colspan="8" class="text-center py-4"><i class="fas fa-search fa-2x text-muted mb-2"></i><p class="text-muted">No users match your filters</p><button class="btn btn-sm btn-outline-primary" onclick="clearAllFilters()">Clear Filters</button>';
+
+                tbody.appendChild(noResults);
+            }
+        } else if (visibleCount > 0 && noResultsRow) {
+            noResultsRow.remove();
+        }
+    }
+    
+    // Clear all filters function
+    window.clearAllFilters = function() {
+        if (searchInput) searchInput.value = '';
+        if (roleFilter) roleFilter.value = 'all';
+        if (statusFilter) statusFilter.value = 'all';
+        if (clearBtn) clearBtn.style.display = 'none';
+        filterUsers();
+        if (searchInput) searchInput.focus();
+    };
+    
+    // Search on input with debounce
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            if (clearBtn) clearBtn.style.display = this.value.length > 0 ? 'block' : 'none';
+            filterUsers();
+        });
+    }
+    
+    // Clear button click
+    if (clearBtn) {
+        clearBtn.addEventListener('click', function() {
+            if (searchInput) {
+                searchInput.value = '';
+                this.style.display = 'none';
+                filterUsers();
+                searchInput.focus();
+            }
+        });
+    }
+    
+    // Role filter change
+    if (roleFilter) roleFilter.addEventListener('change', filterUsers);
+    
+    // Status filter change
+    if (statusFilter) statusFilter.addEventListener('change', filterUsers);
+    
+    // Refresh button with spinner
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', function() {
+            const originalHtml = this.innerHTML;
+            this.disabled = true;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
+            
+            setTimeout(() => {
+                window.location.reload();
+            }, 300);
+        });
+    }
+    
+    // Delete button functionality with CSRF token
+    const deleteButtons = document.querySelectorAll('.delete-btn:not([disabled])');
+    let currentDeleteId = null;
+    
+    deleteButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            currentDeleteId = this.dataset.userId;
+            const username = this.dataset.username;
+            document.getElementById('deleteUsername').textContent = username;
+            new bootstrap.Modal(document.getElementById('deleteConfirmModal')).show();
+        });
+    });
+    
+    // Confirm delete with CSRF token
+    document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+        if (!currentDeleteId) return;
+        
+        const deleteBtn = this;
+        const originalHtml = deleteBtn.innerHTML;
+        deleteBtn.disabled = true;
+        deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
+        
+        const csrfToken = getCsrfToken();
+        
+        fetch(`/users/delete/${currentDeleteId}`, {
+            method: 'DELETE',
+            headers: { 
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': csrfToken
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal')).hide();
+                // Remove the row from the table
+                const row = document.querySelector(`button[data-user-id="${currentDeleteId}"]`).closest('tr');
+                if (row) {
+                    row.remove();
+                }
+                // Update the count
+                const visibleSpan = document.getElementById('visibleCount');
+                const totalSpan = document.getElementById('totalCount');
+                if (visibleSpan) {
+                    const currentVisible = parseInt(visibleSpan.textContent);
+                    visibleSpan.textContent = currentVisible - 1;
+                }
+                if (totalSpan) {
+                    const currentTotal = parseInt(totalSpan.textContent);
+                    totalSpan.textContent = currentTotal - 1;
+                }
+                // Show success message
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed top-0 end-0 m-3';
+                alertDiv.style.zIndex = '9999';
+                alertDiv.style.minWidth = '300px';
+                alertDiv.innerHTML = `
+                    <i class="fas fa-check-circle"></i> User deleted successfully!
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                document.body.appendChild(alertDiv);
+                setTimeout(() => alertDiv.remove(), 3000);
+            } else {
+                alert('Error: ' + (data.error || 'Delete failed'));
+                deleteBtn.disabled = false;
+                deleteBtn.innerHTML = originalHtml;
+            }
+        })
+        .catch(error => {
+            console.error('Delete error:', error);
+            alert('Network error: ' + error.message);
+            deleteBtn.disabled = false;
+            deleteBtn.innerHTML = originalHtml;
+        });
+    });
+});
+</script>
+
+<style>
+/* Search clear button */
+#clearSearchBtn {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    display: none;
+}
+
+/* Filter styles */
+.filter-group select {
+    min-width: 130px;
+}
+
+/* Table hover effect */
+.table-hover tbody tr:hover {
+    background-color: rgba(13, 110, 253, 0.05);
+}
+
+/* No results row */
+.no-results-row td {
+    background-color: #f8f9fa;
+}
+
+/* Refresh button disabled state */
+.refresh-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Action buttons hover effects */
+.btn-group .btn {
+    transition: all 0.2s ease;
+}
+.btn-group .btn:hover {
+    transform: translateY(-1px);
+}
+
+/* Disabled button style */
+.btn.delete-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Success toast animation */
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+.alert-success {
+    animation: slideIn 0.3s ease-out;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .d-flex.justify-content-end {
+        margin-top: 10px;
+        justify-content: flex-start !important;
+    }
+    
+    .filter-group {
+        width: 100%;
+        margin: 5px 0 !important;
+    }
+    
+    .filter-group select {
+        width: 100% !important;
+    }
+}
+</style>
+{% endblock %}

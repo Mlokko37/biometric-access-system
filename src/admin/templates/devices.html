@@ -1,0 +1,444 @@
+{% extends "base.html" %}
+
+{% block title %}Hardware Devices{% endblock %}
+
+{% block content %}
+<div class="container-fluid devices-page">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-header">
+                <h1><i class="fas fa-microchip"></i> Hardware Devices</h1>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Devices</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="quick-actions">
+                <a href="{{ url_for('add_device') }}" class="action-btn">
+                    <i class="fas fa-plus"></i>
+                    <span>Register New Device</span>
+                </a>
+                <a href="{{ url_for('access_points') }}" class="action-btn">
+                    <i class="fas fa-door-open"></i>
+                    <span>Manage Access Points</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Devices Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card stat-card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title">Total Devices</h6>
+                            <h2 class="mb-0">{{ devices|length }}</h2>
+                        </div>
+                        <i class="fas fa-microchip fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title">Online</h6>
+                            <h2 class="mb-0">{{ devices|selectattr('status', 'equalto', 'online')|list|length }}</h2>
+                        </div>
+                        <i class="fas fa-wifi fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card bg-danger text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title">Offline</h6>
+                            <h2 class="mb-0">{{ devices|selectattr('status', 'equalto', 'offline')|list|length }}</h2>
+                        </div>
+                        <i class="fas fa-plug fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title">Maintenance</h6>
+                            <h2 class="mb-0">{{ devices|selectattr('status', 'equalto', 'maintenance')|list|length }}</h2>
+                        </div>
+                        <i class="fas fa-tools fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Devices Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Registered Devices</h5>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" id="filterDropdown">
+                            <i class="fas fa-filter"></i> Filter
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ url_for('devices') }}">All Devices</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item filter-option" href="#" data-status="online">Online Only</a></li>
+                            <li><a class="dropdown-item filter-option" href="#" data-status="offline">Offline Only</a></li>
+                            <li><a class="dropdown-item filter-option" href="#" data-status="maintenance">Maintenance</a></li>
+                            <li><a class="dropdown-item filter-option" href="#" data-status="inactive">Inactive</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if devices %}
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="devicesTable">
+                            <thead>
+                                <tr>
+                                    <th>Device Name</th>
+                                    <th>Type</th>
+                                    <th>Device ID</th>
+                                    <th>Location</th>
+                                    <th>IP Address</th>
+                                    <th>API Key</th>
+                                    <th>Status</th>
+                                    <th>Last Seen</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="devicesTableBody">
+                                {% for device in devices %}
+                                <tr class="device-row" data-status="{{ device.status }}">
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas 
+                                                {% if device.device_type == 'fingerprint_scanner' %}fa-fingerprint
+                                                {% elif device.device_type == 'facial_recognition' %}fa-face-smile
+                                                {% elif device.device_type == 'turnstile' %}fa-door-open
+                                                {% elif device.device_type == 'smart_lock' %}fa-lock
+                                                {% elif device.device_type == 'keypad' %}fa-keyboard
+                                                {% else %}fa-microchip{% endif %}
+                                                me-2 text-primary"></i>
+                                            <strong>{{ device.device_name }}</strong>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ device.device_type|replace('_', ' ')|title }}</span>
+                                    </td>
+                                    <td><code>{{ device.device_id }}</code></td>
+                                    <td>
+                                        {% if device.location %}
+                                            <i class="fas fa-map-marker-alt text-muted me-1"></i>
+                                            {{ device.location }}
+                                        {% else %}
+                                            <span class="text-muted">Not set</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if device.ip_address %}
+                                            <span class="badge bg-secondary">{{ device.ip_address }}</span>
+                                        {% else %}
+                                            <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-dark" style="font-size: 0.65rem; cursor: pointer;" 
+                                              onclick="copyToClipboard('{{ device.api_key }}')" title="Click to copy API key">
+                                            <i class="fas fa-key me-1"></i>
+                                            {{ device.api_key[:12] }}...
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if device.status == 'online' %}bg-success
+                                            {% elif device.status == 'offline' %}bg-danger
+                                            {% elif device.status == 'maintenance' %}bg-warning
+                                            {% else %}bg-secondary{% endif %}">
+                                            {{ device.status|title }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if device.last_seen %}
+                                            {{ device.last_seen.strftime('%Y-%m-%d %H:%M') }}
+                                        {% else %}
+                                            <span class="text-muted">Never</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('edit_device', device_id=device.device_id) }}" 
+                                               class="btn btn-outline-primary" title="Edit Device">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-outline-secondary dropdown-toggle" 
+                                                    data-bs-toggle="dropdown" title="Change Status">
+                                                <i class="fas fa-cog"></i>
+                                            </button>
+                                            <ul class="dropdown-menu">
+                                                <li><a class="dropdown-item device-status-option" href="#" 
+                                                       data-status="online">
+                                                    <i class="fas fa-wifi text-success"></i> Mark Online
+                                                </a></li>
+                                                <li><a class="dropdown-item device-status-option" href="#" 
+                                                       data-status="offline">
+                                                    <i class="fas fa-plug text-danger"></i> Mark Offline
+                                                </a></li>
+                                                <li><a class="dropdown-item device-status-option" href="#" 
+                                                       data-status="maintenance">
+                                                    <i class="fas fa-tools text-warning"></i> Mark Maintenance
+                                                </a></li>
+                                                <li><a class="dropdown-item device-status-option" href="#" 
+                                                       data-status="inactive">
+                                                    <i class="fas fa-times-circle text-secondary"></i> Mark Inactive
+                                                </a></li>
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li>
+                                                    <form action="{{ url_for('delete_device', device_id=device.device_id) }}" 
+                                                          method="POST" class="d-inline delete-device-form">
+                                                        <button type="submit" class="dropdown-item text-danger">
+                                                            <i class="fas fa-trash"></i> Delete Device
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-microchip fa-4x text-muted mb-3"></i>
+                        <h4>No Devices Registered</h4>
+                        <p class="text-muted mb-4">You haven't registered any hardware devices yet.</p>
+                        <div class="d-flex justify-content-center gap-3 flex-wrap">
+                            <a href="{{ url_for('add_device') }}" class="btn btn-primary btn-lg">
+                                <i class="fas fa-plus"></i> Register Your First Device
+                            </a>
+                            <a href="{{ url_for('access_points') }}" class="btn btn-outline-secondary btn-lg">
+                                <i class="fas fa-door-open"></i> Manage Access Points
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% if devices %}
+                <div class="card-footer">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <small class="text-muted">
+                                Showing {{ devices|length }} device{% if devices|length != 1 %}s{% endif %}
+                            </small>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <small class="text-muted">
+                                <i class="fas fa-key me-1"></i> 
+                                Click on API key to copy | 
+                                Last updated: {{ now().strftime('%Y-%m-%d %H:%M:%S') }}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Device Types Legend -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0"><i class="fas fa-info-circle"></i> Device Types Legend</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-2">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-fingerprint text-primary me-2"></i>
+                                <span><strong>Fingerprint Scanner</strong><br><small class="text-muted">Biometric verification using fingerprints</small></span>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-face-smile text-primary me-2"></i>
+                                <span><strong>Facial Recognition</strong><br><small class="text-muted">Camera-based facial verification</small></span>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-door-open text-primary me-2"></i>
+                                <span><strong>Turnstile / Gate</strong><br><small class="text-muted">Physical barrier/access gate</small></span>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-lock text-primary me-2"></i>
+                                <span><strong>Smart Lock</strong><br><small class="text-muted">Electronic door lock (remote controlled)</small></span>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-keyboard text-primary me-2"></i>
+                                <span><strong>Keypad</strong><br><small class="text-muted">PIN/Code entry (visitors/emergency)</small></span>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-microchip text-primary me-2"></i>
+                                <span><strong>Other</strong><br><small class="text-muted">Any other hardware device</small></span>
+                            </div>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row mt-2">
+                        <div class="col-12">
+                            <h6 class="text-muted">Typical Access Point Configurations:</h6>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="bg-light p-2 rounded">
+                                        <strong>Main Gate:</strong><br>
+                                        <small>
+                                            <i class="fas fa-face-smile text-primary"></i> Facial Recognition<br>
+                                            <i class="fas fa-door-open text-primary"></i> + Turnstile
+                                        </small>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="bg-light p-2 rounded">
+                                        <strong>Lab Entrance:</strong><br>
+                                        <small>
+                                            <i class="fas fa-fingerprint text-primary"></i> Fingerprint Scanner<br>
+                                            <i class="fas fa-lock text-primary"></i> + Smart Lock
+                                        </small>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="bg-light p-2 rounded">
+                                        <strong>Visitor Entry:</strong><br>
+                                        <small>
+                                            <i class="fas fa-keyboard text-primary"></i> Keypad (Temp PIN)<br>
+                                            <i class="fas fa-lock text-primary"></i> + Smart Lock
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function copyToClipboard(text) {
+    // Create a temporary input element
+    var input = document.createElement('input');
+    input.value = text;
+    document.body.appendChild(input);
+    input.select();
+    document.execCommand('copy');
+    document.body.removeChild(input);
+    
+    // Show feedback
+    showToast('API key copied to clipboard!', 'success');
+}
+
+function showToast(message, type) {
+    // Simple toast notification
+    var toast = document.createElement('div');
+    toast.className = 'toast align-items-center text-white bg-' + (type === 'success' ? 'success' : 'info') + ' border-0 position-fixed bottom-0 end-0 m-3';
+    toast.style.zIndex = '9999';
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'info-circle'} me-2"></i>
+                ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    `;
+    document.body.appendChild(toast);
+    var bsToast = new bootstrap.Toast(toast, { delay: 3000 });
+    bsToast.show();
+    toast.addEventListener('hidden.bs.toast', function() {
+        toast.remove();
+    });
+}
+
+// Filter functionality
+document.querySelectorAll('.filter-option').forEach(function(link) {
+    link.addEventListener('click', function(e) {
+        e.preventDefault();
+        var status = this.getAttribute('data-status');
+        var rows = document.querySelectorAll('.device-row');
+        
+        rows.forEach(function(row) {
+            if (status === 'all' || row.getAttribute('data-status') === status) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    });
+});
+</script>
+
+<style>
+.action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    color: #495057;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+.action-btn:hover {
+    background: #e9ecef;
+    border-color: #adb5bd;
+    transform: translateY(-1px);
+}
+.stat-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    cursor: default;
+}
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+.badge.bg-dark {
+    background-color: #2d2d2d !important;
+}
+.badge.bg-dark:hover {
+    background-color: #4a4a4a !important;
+}
+</style>
+{% endblock %}
